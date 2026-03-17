@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TaskAgent OS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fdf6ed;color:#2d2013;min-height:100vh;font-size:14px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#e8d5b0;border-radius:2px}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#topbar{background:linear-gradient(135deg,#f9a825,#f57c00);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 12px rgba(245,124,0,0.3)}
+#navbar{background:#fff8f0;border-bottom:2px solid #f0dfc0;display:flex;flex-shrink:0;overflow-x:auto}
+.nav-btn{flex:1;padding:9px 3px;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:#b89060;font-size:10px;font-weight:400;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;min-width:48px}
+.nav-btn.active{color:#d47c20;border-bottom-color:#f5a623;font-weight:700}
+.nav-icon{font-size:16px}
+.card{background:#fff;border:1px solid #f0dfc0;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 6px rgba(212,124,32,0.07)}
+.stat-card{background:#fff;border:1px solid #f0dfc0;border-radius:10px;padding:12px 10px}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.btn-sun{background:linear-gradient(135deg,#f9a825,#f57c00);border:none;color:#fff;padding:9px 18px;border-radius:9px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.btn-outline{background:transparent;border:1.5px solid #e8cfa0;color:#7a5c3a;padding:7px 14px;border-radius:9px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn-wa{background:linear-gradient(135deg,#25d366,#128c7e);border:none;color:#fff;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-del{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;padding:4px 9px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}
+.btn-gmail{background:linear-gradient(135deg,#ea4335,#c5221f);border:none;color:#fff;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+button:active{transform:scale(.97)}
+.inp{width:100%;padding:9px 12px;background:#fffdf9;border:1.5px solid #f0dfc0;border-radius:9px;color:#2d2013;font-size:13px;font-family:inherit;outline:none}
+.inp:focus{border-color:#f5a623}
+.inp::placeholder{color:#c4a47a}
+select.inp option{background:#fff}
+/* Task card */
+.tc{background:#fff;border:1px solid #f0dfc0;border-radius:14px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 4px rgba(212,124,32,0.05)}
+.tc-top{display:flex;align-items:flex-start;gap:10px;padding:12px 13px 8px}
+.chk{width:22px;height:22px;border-radius:50%;border:2px solid #d0c0a0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;cursor:pointer;background:#fff;margin-top:1px}
+.chk.done{border-color:#16a34a;background:#f0fdf4;color:#16a34a}
+.pri-btns{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.pb{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid transparent;font-family:inherit}
+.pb-c{background:#fef2f2;color:#991b1b;border-color:#fca5a5}.pb-c.on{background:#dc2626;color:#fff}
+.pb-h{background:#fff7ed;color:#c2410c;border-color:#fed7aa}.pb-h.on{background:#ea580c;color:#fff}
+.pb-m{background:#fefce8;color:#854d0e;border-color:#fde047}.pb-m.on{background:#ca8a04;color:#fff}
+.pb-l{background:#f0fdf4;color:#166534;border-color:#86efac}.pb-l.on{background:#16a34a;color:#fff}
+.stabs{display:flex;gap:5px;padding:0 13px 9px;flex-wrap:wrap;align-items:center}
+.st{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #e8cfa0;background:#fff;color:#b89060;font-family:inherit}
+.st-t{background:#f57c00;color:#fff;border-color:#f57c00}
+.st-r{background:#4a9eda;color:#fff;border-color:#4a9eda}
+.st-c{background:#7c3aed;color:#fff;border-color:#7c3aed}
+.st-x{background:#e5e7eb;color:#6b7280;border-color:#d1d5db;font-size:10px}
+.tbar{display:flex;gap:5px;padding:7px 13px 9px;flex-wrap:wrap;align-items:center;border-top:1px solid #f5ecd8}
+.tb{padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid transparent}
+.tb-r{background:#fffbeb;border-color:#fde68a;color:#b45309}
+.tb-v{background:#fff8e1;border-color:#fde68a;color:#d97706}
+.rmk-section{background:#fffbeb;border-top:1px solid #fde68a;padding:10px 13px}
+.ri{background:#fff;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:6px}
+.rd{font-size:11px;font-weight:700;color:#b45309;margin-bottom:3px}
+.rts{font-size:10px;color:#d97706;margin-bottom:3px;font-weight:600}
+.rt{font-size:13px;color:#78350f;line-height:1.5}
+.add-rmk{background:#f0fdf4;border-top:1px solid #86efac;padding:10px 13px}
+.due-t{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#fff3e0;color:#e65100;border:1px solid #ffb74d}
+.due-r{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
+.due-c{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#f3e8ff;color:#6d28d9;border:1px solid #c4b5fd}
+.due-n{font-size:11px;padding:3px 9px;border-radius:20px;background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb}
+.rmk-badge{font-size:10px;background:#fffbeb;color:#b45309;padding:2px 7px;border-radius:4px;border:1px solid #fde68a}
+/* Collapsible section header */
+.coll-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#fff8f0;border:1px solid #f0dfc0;border-radius:12px;margin-bottom:8px;cursor:pointer;user-select:none}
+.coll-hdr:active{background:#f0e8d8}
+.coll-arrow{font-size:12px;color:#b89060;transition:transform .2s}
+.coll-arrow.open{transform:rotate(90deg)}
+/* Stats */
+.bar-bg{height:6px;background:#f5e8d0;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.morning-banner{background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.action-card{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 12px;margin-top:8px}
+.ai-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#fff;border:1px solid #d1fae5;border-radius:8px;margin-bottom:5px;cursor:pointer}
+.pdf-badge{display:inline-flex;align-items:center;gap:6px;background:#f3e8ff;border:1px solid #c4b5fd;border-radius:8px;padding:5px 10px;font-size:12px;color:#6d28d9;font-weight:600}
+#chat-footer{background:#fff8f0;border-top:1.5px solid #f0dfc0;padding:10px 12px;flex-shrink:0;display:none}
+#chat-ta{flex:1;padding:9px 12px;background:#fffdf9;border:1.5px solid #f0dfc0;border-radius:12px;color:#2d2013;font-size:13px;font-family:inherit;outline:none;resize:none;min-height:42px;max-height:120px;line-height:1.5}
+#chat-ta:focus{border-color:#f5a623}
+.msg{max-width:85%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#f9a825,#f57c00);color:#fff;border-radius:14px 14px 3px 14px}
+.msg.bot{align-self:flex-start;background:#fff;border:1px solid #f0dfc0;border-radius:14px 14px 14px 3px;color:#2d2013;max-width:92%}
+.msg.sys{align-self:center;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;color:#166534;font-size:12px;padding:7px 12px;text-align:center;max-width:95%;white-space:normal}
+.msg.err{align-self:flex-start;background:#fef2f2;border:1px solid #fca5a5;border-radius:14px 14px 14px 3px;color:#dc2626;font-size:13px;max-width:92%}
+#sdot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-left:4px;flex-shrink:0}
+#sdot.sy{background:#f59e0b;animation:pulse 1s ease infinite}
+#sdot.er{background:#ef4444}
+#api-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px}
+#api-modal.show{display:flex}
+.modal-box{background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+#loading{position:fixed;inset:0;background:linear-gradient(135deg,#f9a825,#f57c00);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;color:#fff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</head>
+<body>
+<div id="loading"><div style="font-size:48px;margin-bottom:16px">☀️</div><div style="font-size:20px;font-weight:700;margin-bottom:8px">TaskAgent OS</div><div style="font-size:14px;opacity:.85">Connecting to Firebase...</div></div>
+<div id="app" style="display:none">
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;background:rgba(255,255,255,0.25);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">☀️</div>
+      <div>
+        <div style="font-weight:700;font-size:15px;color:#fff;display:flex;align-items:center;gap:5px">TaskAgent OS<span id="sdot"></span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.85)" id="gsub"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center" id="badges">
+      <span style="font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);font-weight:600">🔥 Live</span>
+      <button onclick="showApiModal()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit">🔑 Gemini</button>
+    </div>
+  </div>
+  <div id="navbar">
+    <button class="nav-btn active" onclick="setTab('dash',this)"><span class="nav-icon">🏠</span>Home</button>
+    <button class="nav-btn" onclick="setTab('sheet',this)"><span class="nav-icon">📅</span>Today</button>
+    <button class="nav-btn" onclick="setTab('manual',this)"><span class="nav-icon">✏️</span>My Tasks</button>
+    <button class="nav-btn" onclick="setTab('all',this)"><span class="nav-icon">📋</span>All Tasks</button>
+    <button class="nav-btn" onclick="setTab('wa',this)"><span class="nav-icon">💬</span>WhatsApp</button>
+    <button class="nav-btn" onclick="setTab('gmail',this)"><span class="nav-icon">✉️</span>Gmail</button>
+    <button class="nav-btn" onclick="setTab('agent',this)"><span class="nav-icon">🤖</span>AI Chat</button>
+  </div>
+  <div id="content" style="flex:1;overflow-y:auto;padding:14px 12px"></div>
+  <div id="chat-footer">
+    <div style="display:flex;gap:7px;margin-bottom:8px;align-items:center;flex-wrap:wrap">
+      <label style="cursor:pointer"><span style="background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:#fff;padding:7px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px">📄 Upload PDF</span><input type="file" id="pdfin" accept=".pdf" style="display:none" onchange="handlePDF(this)"></label>
+      <span id="pdf-badge"></span>
+      <button id="clear-pdf" onclick="clearPDF()" style="display:none;padding:5px 10px;background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:7px;font-size:11px;cursor:pointer;font-family:inherit">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="chat-ta" placeholder="Ask AI to manage your tasks, add reminders, analyze PDFs..." rows="1" oninput="autoR(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button class="btn-sun" onclick="sendChat()" style="padding:9px 16px;flex-shrink:0;height:42px">Send ↑</button>
+    </div>
+    <div style="font-size:11px;color:#c4a47a;margin-top:5px">⚡ Gemini 2.5 Flash for chat · 🧠 Auto-upgrades to 2.5 Pro for PDFs</div>
+  </div>
+</div>
+<div id="api-modal">
+  <div class="modal-box">
+    <div style="font-size:17px;font-weight:700;color:#78350f;margin-bottom:8px">🔑 Gemini API Key (Free)</div>
+    <div style="font-size:13px;color:#7a5c3a;margin-bottom:14px;line-height:1.6">Get a free key at <a href="https://aistudio.google.com" target="_blank" style="color:#d47c20">aistudio.google.com</a> → Get API Key. No credit card needed!</div>
+    <input class="inp" id="apikey-inp" type="password" placeholder="AIza..." style="margin-bottom:12px">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-outline" onclick="closeApiModal()">Cancel</button>
+      <button class="btn-sun" onclick="saveApiKey()">Save & Connect</button>
+    </div>
+    <div id="apikey-status" style="margin-top:10px;font-size:12px;text-align:center"></div>
+  </div>
+</div>
+
+<script>
+const FB = "https://taskagent-os-default-rtdb.firebaseio.com";
+const PRI = {
+  critical:{color:"#dc2626",bg:"#fef2f2",label:"Critical",bd:"#fca5a5"},
+  high:    {color:"#c2410c",bg:"#fff7ed",label:"High",    bd:"#fed7aa"},
+  medium:  {color:"#ca8a04",bg:"#fefce8",label:"Medium",  bd:"#fde047"},
+  low:     {color:"#16a34a",bg:"#f0fdf4",label:"Low",     bd:"#86efac"},
+};
+
+// ── STATE ──
+let S = {
+  tab:"dash", tasks:[], wa:[], emails:[],
+  chat:[{r:"a",t:"Good morning! ☀️ I'm your AI Task Agent powered by Gemini (free).\n\n✏️ Type anything to create tasks\n📄 Upload a PDF to extract tasks & WA reminders\n💡 Ask me anything — I can add tasks, set priorities, schedule reminders!\n\nTap 🔑 Gemini to add your free API key."}],
+  thinking:false, filterPri:"all",
+  showAddTask:false, showAddWa:false,
+  remarkingId:null, showRemarksId:null, editingId:null,
+  // Collapsible section state — Today tab
+  collSheet:{today:true,tomorrow:true,custom:true,done:false},
+  // Collapsible section state — All Tasks tab
+  collAll:{manual:true,gmail:true,wa:true,done:false},
+  nT:{title:"",priority:"medium",sched:"none",customDate:""},
+  nW:{contact:"",msg:"",time:"",priority:"medium"},
+  pdf:null, pdfName:"",
+  lastWrite:0,
+  // Gmail state
+  gmailToken:null, gmailEmails:[], gmailLoading:false, gmailSearch:"", gmailError:""
+};
+
+// ── HELPERS ──
+function ec(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function tod(){const d=new Date();return`${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getFullYear()}`}
+function tsNow(){const n=new Date();const h=n.getHours().toString().padStart(2,'0');const m=n.getMinutes().toString().padStart(2,'0');return`${h}:${m}`}
+function dtNow(){return`${tod()} ${tsNow()}`}
+function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️":h<17?"Good afternoon! 🌤":"Good evening! 🌅"}
+function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
+function autoR(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px"}
+function scr(){setTimeout(()=>document.getElementById("chat-end")?.scrollIntoView({behavior:"smooth"}),80)}
+function getApiKey(){return localStorage.getItem('ta_gemini_key')||'AIzaSyB8Og5Bad7eg4W62U0IMMscCDkOBZu_I5Y';}
+function showApiModal(){document.getElementById('apikey-inp').value=getApiKey();document.getElementById('apikey-status').textContent=getApiKey()?'✅ Gemini key is set':'';document.getElementById('api-modal').classList.add('show');}
+function closeApiModal(){document.getElementById('api-modal').classList.remove('show');}
+function saveApiKey(){const k=document.getElementById('apikey-inp').value.trim();if(!k)return;localStorage.setItem('ta_gemini_key',k);document.getElementById('apikey-status').innerHTML='✅ Saved!';setTimeout(()=>closeApiModal(),900);}
+function dot(st){const d=document.getElementById('sdot');if(!d)return;d.className=st;}
+function azTasks(arr){return[...arr].sort((a,b)=>a.title.localeCompare(b.title));}
+document.getElementById("gsub").textContent=greet();
+
+// ── FIREBASE ──
+function fbWrite(path,data){S.lastWrite=Date.now();dot('sy');fetch(`${FB}/${path}.json`,{method:'PUT',body:JSON.stringify(data)}).then(r=>dot(r.ok?'':'')).catch(()=>dot('er'));}
+function fbDel(path){S.lastWrite=Date.now();dot('sy');fetch(`${FB}/${path}.json`,{method:'DELETE'}).then(()=>dot('')).catch(()=>dot('er'));}
+
+// ── OPTIMISTIC ACTIONS ──
+function upd(id,changes){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const updated={...t,...changes};
+  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  updateCard(id);fbWrite(`tasks/${id}`,updated);
+}
+function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{done:!t.done});}
+function setPri(id,p){upd(id,{priority:p});}
+function setSched(id,s){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{sched:s,customDate:s==='custom'?t.customDate:''});}
+function setCDate(id,d){upd(id,{customDate:d});}
+function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
+
+// ── MULTI-REMARK WITH TIMESTAMP ──
+function svRmk(id){
+  const txt=document.getElementById(`rmk-${id}`)?.value?.trim();if(!txt)return alert("Enter a remark");
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  // Each remark has unique id, date, time, text — multiple per day allowed
+  const newRmk={id:Date.now(),date:tod(),time:tsNow(),dt:dtNow(),text:txt};
+  const remarks=[...(t.remarks||[]),newRmk];
+  const updated={...t,remarks};
+  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  S.remarkingId=null;S.showRemarksId=id;
+  updateCard(id);fbWrite(`tasks/${id}`,updated);
+}
+function delRmk(tid,rmkId){
+  const t=S.tasks.find(x=>x.id===tid);if(!t)return;
+  upd(tid,{remarks:(t.remarks||[]).filter(r=>r.id!==rmkId)});
+}
+
+function saveEdit(id){
+  const title=document.getElementById(`ed-title-${id}`)?.value?.trim();
+  if(!title)return alert("Title cannot be empty");
+  upd(id,{title});
+  S.editingId=null;
+}
+function addTask(){
+  const title=document.getElementById("nt-t")?.value?.trim()||S.nT.title;
+  if(!title)return alert("Enter a title");
+  const id=Date.now();
+  const newT={id,title,priority:S.nT.priority,source:"manual",sched:S.nT.sched,customDate:S.nT.customDate||"",done:false,remarks:[]};
+  S.tasks=[...S.tasks,newT];S.nT={title:"",priority:"medium",sched:"none",customDate:""};S.showAddTask=false;
+  render();fbWrite(`tasks/${id}`,newT);
+}
+function addWa(){
+  const contact=document.getElementById("wa-c")?.value?.trim();
+  const msg=document.getElementById("wa-m")?.value?.trim();
+  const time=document.getElementById("wa-t")?.value?.trim();
+  const priority=document.getElementById("wa-p")?.value||"medium";
+  if(!contact||!msg)return alert("Contact and message required");
+  const id=Date.now();
+  const newW={id,contact,msg,time:time||"Soon",sent:false,priority};
+  S.wa=[...S.wa,newW];S.showAddWa=false;render();fbWrite(`wa/${id}`,newW);
+}
+function mkSent(id){const w=S.wa.find(x=>x.id===id);if(!w)return;const u={...w,sent:true};S.wa=S.wa.map(x=>x.id===id?u:x);render();fbWrite(`wa/${id}`,u);}
+function dlWa(id){S.wa=S.wa.filter(w=>w.id!==id);render();fbDel(`wa/${id}`);}
+
+// ── TARGETED CARD UPDATE ──
+function updateCard(id){
+  const el=document.getElementById(`tc-${id}`);if(!el)return;
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  el.outerHTML=tCard(t);updateStats();
+}
+function updateStats(){
+  const pnd=S.tasks.filter(t=>!t.done);const cr=pnd.filter(t=>t.priority==="critical").length;
+  let cb=document.getElementById("cb");
+  if(cr>0){if(!cb){cb=document.createElement("span");cb.id="cb";cb.style.cssText="font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);font-weight:600";document.getElementById("badges").insertBefore(cb,document.querySelector('#badges button'));}cb.textContent=`🔴 ${cr}`;}else if(cb)cb.remove();
+}
+
+// ── TAB NAVIGATION ──
+function setTab(t,btn){S.tab=t;document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));if(btn)btn.classList.add("active");document.getElementById("chat-footer").style.display=t==="agent"?"block":"none";render();if(t==="agent")scr();}
+function navTo(t,i){S.tab=t;document.querySelectorAll(".nav-btn").forEach((b,j)=>b.classList.toggle("active",j===i));document.getElementById("chat-footer").style.display=t==="agent"?"block":"none";render();if(t==="agent")scr();}
+
+// ── RENDER ──
+function render(){
+  const pnd=S.tasks.filter(t=>!t.done);const cr=pnd.filter(t=>t.priority==="critical").length;
+  let cb=document.getElementById("cb");
+  if(cr>0){if(!cb){cb=document.createElement("span");cb.id="cb";cb.style.cssText="font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,0.25);color:#fff;border:1px solid rgba(255,255,255,0.4);font-weight:600";document.getElementById("badges").insertBefore(cb,document.querySelector('#badges button'));}cb.textContent=`🔴 ${cr}`;}else if(cb)cb.remove();
+  const c=document.getElementById("content");
+  if(S.tab==="dash")    rDash(c,pnd,cr);
+  else if(S.tab==="sheet")  rSheet(c);
+  else if(S.tab==="manual") rManual(c);
+  else if(S.tab==="all")    rAll(c);
+  else if(S.tab==="wa")     rWa(c);
+  else if(S.tab==="gmail")  rGmail(c);
+  else if(S.tab==="agent")  rAgent(c);
+}
+
+// ── DUE LABEL ──
+function dueLabel(t){
+  if(t.sched==="today")return`<span class="due-t">📅 Today</span>`;
+  if(t.sched==="tomorrow")return`<span class="due-r">📅 Tomorrow</span>`;
+  if(t.sched==="custom"&&t.customDate)return`<span class="due-c">📅 ${ec(t.customDate)}</span>`;
+  return`<span class="due-n">Unscheduled</span>`;
+}
+
+// ── TASK CARD ──
+function tCard(t){
+  const ie=S.editingId===t.id;
+  const ir=S.remarkingId===t.id,sr=S.showRemarksId===t.id;
+  const remarks=t.remarks||[];const hr=remarks.length>0;
+  const priRow=["critical","high","medium","low"].map(p=>{
+    const cls={critical:"pb-c",high:"pb-h",medium:"pb-m",low:"pb-l"}[p];
+    return`<button class="pb ${cls} ${t.priority===p?'on':''}" onclick="setPri(${t.id},'${p}')">${PRI[p].label}</button>`;
+  }).join("");
+  const schedRow=`
+    <button class="st ${t.sched==='today'?'st-t':''}" onclick="setSched(${t.id},'today')">📅 Today</button>
+    <button class="st ${t.sched==='tomorrow'?'st-r':''}" onclick="setSched(${t.id},'tomorrow')">⏭ Tomorrow</button>
+    <button class="st ${t.sched==='custom'?'st-c':''}" onclick="setSched(${t.id},'custom')">🗓 Custom</button>
+    ${t.sched!=='none'?`<button class="st st-x" onclick="setSched(${t.id},'none')">✕ Clear</button>`:''}
+    ${t.sched==='custom'?`<input type="date" value="${ec(t.customDate||'')}" onchange="setCDate(${t.id},this.value)" style="padding:4px 8px;border-radius:8px;border:1.5px solid #c4b5fd;font-size:11px;color:#2d2013;font-family:inherit;outline:none;background:#faf5ff;width:130px">`:''}`;
+  // Remarks display — sorted newest first
+  const rmksHtml=sr&&hr?`<div class="rmk-section">
+    <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">📅 Progress Log (${remarks.length} entries)</div>
+    ${[...remarks].reverse().map(r=>`<div class="ri">
+      <div class="rd">📌 ${ec(r.date||'')} <span class="rts">⏰ ${ec(r.time||r.dt||'')}</span></div>
+      <div class="rt">${ec(r.text)}</div>
+      <div style="text-align:right;margin-top:5px"><button class="btn-del" onclick="delRmk(${t.id},${r.id||0})">🗑</button></div>
+    </div>`).join("")}
+  </div>`:"";
+  const addRmk=ir?`<div class="add-rmk">
+    <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px">📝 Add Progress Note — ${tod()} ${tsNow()}</div>
+    <textarea class="inp" id="rmk-${t.id}" placeholder="What happened? Any update or progress..." rows="2" style="resize:vertical;margin-bottom:8px"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.remarkingId=null;updateCard(${t.id})">Cancel</button>
+      <button style="padding:5px 14px;background:#16a34a;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="svRmk(${t.id})">💾 Save Note</button>
+    </div>
+  </div>`:"";
+  const editForm=ie?`<div style="background:#eff6ff;border-top:1px solid #93c5fd;padding:10px 13px">
+    <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px">✏️ Edit Task</div>
+    <input class="inp" id="ed-title-${t.id}" value="${ec(t.title)}" placeholder="Task title..." style="margin-bottom:8px;border-color:#93c5fd">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.editingId=null;updateCard(${t.id})">Cancel</button>
+      <button style="padding:5px 14px;background:#1d4ed8;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="saveEdit(${t.id})">💾 Save</button>
+    </div>
+  </div>`:"";
+  return`<div class="tc" id="tc-${t.id}" style="opacity:${t.done?0.6:1}">
+    <div class="tc-top">
+      <div class="chk ${t.done?'done':''}" onclick="toggleTask(${t.id})" style="border-color:${t.done?'#16a34a':PRI[t.priority]?.color||'#d0c0a0'}">${t.done?"✓":""}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:7px;text-decoration:${t.done?'line-through':'none'};color:${t.done?'#b89060':'#2d2013'};line-height:1.4">${ec(t.title)}</div>
+        <div class="pri-btns">${priRow}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">${dueLabel(t)}${hr?`<span class="rmk-badge">📝 ${remarks.length} note${remarks.length>1?"s":""}</span>`:""}</div>
+      </div>
+    </div>
+    <div class="stabs">${schedRow}</div>
+    <div class="tbar">
+      <button class="tb" style="background:#eff6ff;border-color:#93c5fd;color:#1d4ed8" onclick="S.editingId=S.editingId===${t.id}?null:${t.id};S.remarkingId=null;S.showRemarksId=null;updateCard(${t.id})">✏️ ${ie?"Close":"Edit"}</button>
+      <button class="tb tb-r" onclick="S.remarkingId=S.remarkingId===${t.id}?null:${t.id};S.showRemarksId=null;S.editingId=null;updateCard(${t.id})">📝 ${ir?"Close":"Add Note"}</button>
+      ${hr?`<button class="tb tb-v" onclick="S.showRemarksId=S.showRemarksId===${t.id}?null:${t.id};S.remarkingId=null;S.editingId=null;updateCard(${t.id})">📅 ${sr?"Hide":"View"} Log (${remarks.length})</button>`:""}
+      <button class="btn-del" onclick="delTask(${t.id})" style="margin-left:auto">🗑</button>
+    </div>
+    ${editForm}${rmksHtml}${addRmk}
+  </div>`;
+}
+
+// ── COLLAPSIBLE SECTION HEADER ──
+function collHdr(label,count,key,stateObj,color,bg){
+  const open=stateObj[key];
+  return`<div class="coll-hdr" onclick="${stateObj===S.collSheet?'S.collSheet':'S.collAll'}['${key}']=!${stateObj===S.collSheet?'S.collSheet':'S.collAll'}['${key}'];render()">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px;font-weight:700;color:${color}">${label}</span>
+      <span style="background:${bg};color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700">${count}</span>
+    </div>
+    <span class="coll-arrow ${open?'open':''}">▶</span>
+  </div>`;
+}
+
+// ── DASHBOARD ──
+function rDash(c,pnd,cr){
+  const todayT=pnd.filter(t=>t.sched==="today"),tmrwT=pnd.filter(t=>t.sched==="tomorrow"),unsch=pnd.filter(t=>t.sched==="none");
+  const stats=[["Total",S.tasks.length,"#f57c00"],["Pending",pnd.length,"#d97706"],["Today",todayT.length,"#dc2626"],["Tomorrow",tmrwT.length,"#2563eb"],["Done",S.tasks.filter(t=>t.done).length,"#16a34a"]];
+  const bars=Object.entries(PRI).map(([k,v])=>{const n=pnd.filter(t=>t.priority===k).length;const p=pnd.length?(n/pnd.length)*100:0;return`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;font-weight:600;color:${v.color}">${v.label}</span><span style="font-size:12px;color:#b89060;font-family:monospace">${n}</span></div><div class="bar-bg"><div class="bar-fill" style="width:${p}%;background:${v.color}"></div></div></div>`;}).join("");
+  c.innerHTML=`
+    <div class="morning-banner"><div style="font-size:32px">☀️</div><div><div style="font-weight:700;font-size:15px;color:#78350f">${greet()}</div><div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · ${todayT.length} today · ${unsch.length} unscheduled</div></div></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px">${stats.map(([l,v,col])=>`<div class="stat-card" style="border-top:3px solid ${col}"><div style="font-size:20px;font-weight:700;color:${col};font-family:monospace">${v}</div><div style="font-size:11px;color:#b89060;margin-top:2px">${l}</div></div>`).join("")}</div>
+    <div class="card"><div style="font-size:13px;font-weight:700;color:#7a5c3a;margin-bottom:10px">📊 Priority breakdown</div>${bars}</div>
+    <div class="card"><div style="font-size:13px;font-weight:700;color:#7a5c3a;margin-bottom:12px">⚡ Quick actions</div><div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-sun" onclick="navTo('sheet',1)" style="text-align:left;padding:12px 14px;width:100%">📅 View Today's Task Sheet</button>
+      <button class="btn-sun" onclick="navTo('manual',2);S.showAddTask=true;render()" style="text-align:left;padding:12px 14px;width:100%;background:linear-gradient(135deg,#fb923c,#ea580c)">✏️ Add New Task</button>
+      <button class="btn-wa" onclick="navTo('wa',4)" style="text-align:left;padding:12px 14px;width:100%">💬 WhatsApp Reminders</button>
+      <button style="background:linear-gradient(135deg,#ea4335,#c5221f);border:none;color:#fff;padding:12px 14px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;width:100%" onclick="navTo('gmail',5)">✉️ Gmail Inbox</button>
+      <button class="btn-sun" onclick="navTo('agent',6)" style="text-align:left;padding:12px 14px;width:100%;background:linear-gradient(135deg,#a78bfa,#7c3aed)">🤖 AI Chat (Gemini Free)</button>
+    </div></div>
+    ${unsch.length>0?`<div class="card" style="border-left:4px solid #9ca3af">
+      <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:10px">⏳ ${unsch.length} unscheduled</div>
+      ${azTasks(unsch).slice(0,4).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5e8d0">
+        <div style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ec(t.title)}</div>
+        ${pt(t.priority)}
+        <button onclick="setSched(${t.id},'today')" style="padding:3px 10px;background:#f57c00;border:none;color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Today</button>
+      </div>`).join("")}
+      ${unsch.length>4?`<div style="text-align:center;margin-top:8px"><button class="btn-outline" style="font-size:12px;padding:5px 14px" onclick="navTo('manual',2)">View all ${unsch.length} →</button></div>`:""}
+    </div>`:""}`;
+}
+
+// ── TODAY SHEET — collapsible sections ──
+function rSheet(c){
+  const sections=[
+    ["today","📅 Today","#e65100","#f57c00"],
+    ["tomorrow","⏭ Tomorrow","#1565c0","#4a9eda"],
+    ["custom","🗓 Scheduled","#6d28d9","#7c3aed"]
+  ];
+  let html=`<div style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px"><div style="font-size:16px;font-weight:700;color:#78350f">📅 Daily Task Sheet</div><div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · Tap section to collapse/expand</div></div>`;
+  let any=false;
+  sections.forEach(([s,lbl,col,bg])=>{
+    const ts=azTasks(S.tasks.filter(t=>t.sched===s&&!t.done&&(s!=='custom'||t.customDate)));
+    if(!ts.length)return;any=true;
+    html+=collHdr(lbl,ts.length,s,S.collSheet,col,bg);
+    if(S.collSheet[s])html+=`<div style="margin-bottom:12px">${ts.map(t=>tCard(t)).join("")}</div>`;
+  });
+  if(!any)html+=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-weight:600;color:#78350f;margin-bottom:7px">No scheduled tasks</div><div style="color:#b89060;font-size:13px;margin-bottom:16px">Go to My Tasks and tap Today or Tomorrow</div><button class="btn-sun" onclick="navTo('manual',2)">✏️ Go to My Tasks</button></div>`;
+  // Done section — collapsible
+  const done=azTasks(S.tasks.filter(t=>t.done));
+  if(done.length){
+    html+=collHdr("✅ Completed",done.length,"done",S.collSheet,"#16a34a","#16a34a");
+    if(S.collSheet.done)html+=`<div style="margin-bottom:12px">${done.map(t=>tCard(t)).join("")}</div>`;
+  }
+  c.innerHTML=html;
+}
+
+// ── MY TASKS ──
+function rManual(c){
+  const my=azTasks(S.tasks.filter(t=>t.source==="manual"&&!t.done));
+  const done=azTasks(S.tasks.filter(t=>t.source==="manual"&&t.done));
+  const fl=["all","critical","high","medium","low"];
+  const filtered=S.filterPri==="all"?my:my.filter(t=>t.priority===S.filterPri);
+  const addForm=S.showAddTask?`<div class="card" style="border:2px solid #f5a623;margin-bottom:14px">
+    <div style="font-size:13px;font-weight:700;color:#7a5c3a;margin-bottom:12px">✏️ New Task</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <input class="inp" id="nt-t" placeholder="Task title..." oninput="S.nT.title=this.value" value="${ec(S.nT.title)}">
+      <div style="font-size:12px;font-weight:600;color:#7a5c3a">Priority:</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${["critical","high","medium","low"].map(p=>{const s=PRI[p];const sel=S.nT.priority===p;return`<button class="pb ${{critical:'pb-c',high:'pb-h',medium:'pb-m',low:'pb-l'}[p]} ${sel?'on':''}" onclick="S.nT.priority='${p}';render()">${s.label}</button>`;}).join("")}</div>
+      <div style="font-size:12px;font-weight:600;color:#7a5c3a">Schedule:</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${["today","tomorrow","custom"].map(s=>`<button class="st ${S.nT.sched===s?{today:'st-t',tomorrow:'st-r',custom:'st-c'}[s]:''}" onclick="S.nT.sched='${s}';render()">${{today:'📅 Today',tomorrow:'⏭ Tomorrow',custom:'🗓 Custom'}[s]}</button>`).join("")}
+        ${S.nT.sched==='custom'?`<input type="date" onchange="S.nT.customDate=this.value" style="padding:4px 8px;border-radius:8px;border:1.5px solid #c4b5fd;font-size:11px;color:#2d2013;font-family:inherit;outline:none;background:#faf5ff;width:130px">`:""}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-outline" style="font-size:12px;padding:6px 14px" onclick="S.showAddTask=false;render()">Cancel</button>
+        <button class="btn-sun" onclick="addTask()">Add Task</button>
+      </div>
+    </div>
+  </div>`:"";
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div><div style="font-size:16px;font-weight:700;color:#78350f">My Tasks</div><div style="font-size:12px;color:#b89060;margin-top:2px">${my.length} pending · A-Z</div></div>
+      <button class="btn-sun" onclick="S.showAddTask=!S.showAddTask;render()" style="padding:8px 16px">${S.showAddTask?"✕ Close":"+ Add"}</button>
+    </div>${addForm}
+    <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">${fl.map(f=>{const s=PRI[f];return`<button onclick="S.filterPri='${f}';render()" style="padding:4px 12px;border-radius:20px;border:1.5px solid ${S.filterPri===f?(s?.bd||'#f5a623'):'#e8cfa0'};background:${S.filterPri===f?(s?.bg||'#fff8e1'):'#fff'};color:${S.filterPri===f?(s?.color||'#d47c20'):'#b89060'};font-size:12px;cursor:pointer;font-family:inherit;font-weight:${S.filterPri===f?700:400};text-transform:capitalize">${f}</button>`;}).join("")}</div>
+    ${filtered.map(t=>tCard(t)).join("")||`<div style="text-align:center;padding:30px;color:#b89060;font-size:13px">No tasks here.</div>`}
+    ${done.length>0?`<div style="margin-top:12px">
+      <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:8px;padding:8px 0;border-top:1px solid #f0dfc0;cursor:pointer" onclick="S.collAll.done=!S.collAll.done;render()">
+        ${S.collAll.done?'▼':'▶'} ✅ Completed (${done.length})
+      </div>
+      ${S.collAll.done?done.map(t=>tCard(t)).join(""):""}
+    </div>`:""}`;
+}
+
+// ── ALL TASKS — grouped by source, collapsible ──
+function rAll(c){
+  const groups=[
+    ["manual","✏️ Manual Tasks","#c2410c","#ea580c"],
+    ["gmail","✉️ From Gmail","#ea4335","#ea4335"],
+    ["whatsapp","💬 From WhatsApp","#16a34a","#25d366"]
+  ];
+  const done=azTasks(S.tasks.filter(t=>t.done));
+  const fl=["all","critical","high","medium","low"];
+  let html=`<div style="margin-bottom:12px"><div style="font-size:16px;font-weight:700;color:#78350f">All Tasks</div><div style="font-size:12px;color:#b89060;margin-top:2px">${S.tasks.length} total · grouped by source · A-Z</div></div>
+  <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">${fl.map(f=>{const s=PRI[f];return`<button onclick="S.filterPri='${f}';render()" style="padding:4px 12px;border-radius:20px;border:1.5px solid ${S.filterPri===f?(s?.bd||'#f5a623'):'#e8cfa0'};background:${S.filterPri===f?(s?.bg||'#fff8e1'):'#fff'};color:${S.filterPri===f?(s?.color||'#d47c20'):'#b89060'};font-size:12px;cursor:pointer;font-family:inherit;font-weight:${S.filterPri===f?700:400};text-transform:capitalize">${f}</button>`;}).join("")}</div>`;
+  groups.forEach(([src,lbl,col,bg])=>{
+    let ts=azTasks(S.tasks.filter(t=>t.source===src&&!t.done));
+    if(S.filterPri!=="all")ts=ts.filter(t=>t.priority===S.filterPri);
+    if(!ts.length)return;
+    html+=collHdr(lbl,ts.length,src,S.collAll,col,bg);
+    if(S.collAll[src])html+=`<div style="margin-bottom:8px">${ts.map(t=>tCard(t)).join("")}</div>`;
+  });
+  // Done
+  if(done.length){
+    html+=`<div style="margin-top:8px">
+      <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:8px;padding:8px 0;border-top:1px solid #f0dfc0;cursor:pointer" onclick="S.collAll.done=!S.collAll.done;render()">
+        ${S.collAll.done?'▼':'▶'} ✅ Completed (${done.length})
+      </div>
+      ${S.collAll.done?done.map(t=>tCard(t)).join(""):""}
+    </div>`;
+  }
+  c.innerHTML=html;
+}
+
+// ── WHATSAPP ──
+function rWa(c){
+  const pnd=S.wa.filter(w=>!w.sent).length;
+  const addForm=S.showAddWa?`<div class="card" style="border:2px solid #25d366;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:#7a5c3a;margin-bottom:12px">💬 New Reminder</div>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <input class="inp" id="wa-c" placeholder="Contact name or group...">
+      <textarea class="inp" id="wa-m" placeholder="Message..." rows="3" style="resize:vertical"></textarea>
+      <div style="display:flex;gap:8px">
+        <input class="inp" style="flex:1" id="wa-t" placeholder="Time (e.g. Today 3 PM)">
+        <select class="inp" style="flex:1" id="wa-p"><option value="critical">🔴 Critical</option><option value="high">🟠 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-outline" style="font-size:12px" onclick="S.showAddWa=false;render()">Cancel</button>
+        <button class="btn-wa" onclick="addWa()">Schedule</button>
+      </div>
+    </div>
+  </div>`:"";
+  c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div><div style="font-size:16px;font-weight:700;color:#78350f">WhatsApp Reminders</div><div style="font-size:12px;color:#b89060;margin-top:2px">🔥 Firebase synced</div></div><button class="btn-wa" onclick="S.showAddWa=!S.showAddWa;render()">+ Schedule</button></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">${[["Pending",pnd,"#d97706"],["Sent",S.wa.filter(w=>w.sent).length,"#16a34a"],["Total",S.wa.length,"#f57c00"]].map(([l,v,col])=>`<div class="stat-card" style="text-align:center;border-top:3px solid ${col}"><div style="font-size:20px;font-weight:700;color:${col};font-family:monospace">${v}</div><div style="font-size:11px;color:#b89060;margin-top:2px">${l}</div></div>`).join("")}</div>${addForm}
+  ${S.wa.length===0?`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">💬</div><div style="font-weight:600;color:#78350f;margin-bottom:7px">No reminders yet</div><button class="btn-wa" onclick="S.showAddWa=true;render()">+ Schedule First</button></div>`:""}
+  ${S.wa.map(w=>`<div class="card" style="border-left:4px solid ${w.sent?'#16a34a':PRI[w.priority]?.color||'#25d366'};opacity:${w.sent?0.65:1}"><div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1;min-width:0"><div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center"><span style="font-weight:700;color:#128c7e;font-size:13px">💬 ${ec(w.contact)}</span>${pt(w.priority)}<span style="font-size:11px;background:${w.sent?'#f0fdf4':'#fffbeb'};color:${w.sent?'#16a34a':'#d97706'};padding:2px 8px;border-radius:20px;border:1px solid ${w.sent?'#86efac':'#fcd34d'}">${w.sent?"✓ Sent":"⏳ Pending"}</span></div><div style="font-size:13px;padding:8px 11px;background:#f0fff4;border-radius:8px;border:1px solid #bbf7d0;margin-bottom:8px;line-height:1.6;color:#14532d">"${ec(w.msg)}"</div><div style="font-size:12px;color:#b89060">⏰ ${w.time}</div></div><div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">${!w.sent?`<button style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a;padding:5px 10px;border-radius:7px;font-size:12px;cursor:pointer;font-family:inherit" onclick="mkSent(${w.id})">✓ Sent</button>`:""}<button class="btn-del" onclick="dlWa(${w.id})">🗑</button></div></div></div>`).join("")}`;
+}
+
+const GMAIL_CLIENT_ID="866218921171-vu55i58q60k32igopbvdoltrmjvsnc73.apps.googleusercontent.com";
+const WA_SERVER="https://wa.aldancare.com";
+const GSCOPES="https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify";
+function rGmail(c){
+  const hasToken=!!S.gmailToken;
+  if(!hasToken){
+    c.innerHTML=`<div style="margin-bottom:14px"><div style="font-size:16px;font-weight:700;color:#78350f">Gmail Inbox</div><div style="font-size:12px;color:#b89060;margin-top:2px">Sign in with Google to access your Gmail</div></div>
+    <div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:16px">✉️</div>
+      <div style="font-weight:700;color:#78350f;font-size:16px;margin-bottom:8px">Connect Gmail</div>
+      <div style="color:#b89060;font-size:13px;margin-bottom:20px;line-height:1.6">Sign in with Google to read your inbox, search emails, and create tasks from emails.</div>
+      <button onclick="gmailSignIn()" style="background:linear-gradient(135deg,#ea4335,#c5221f);border:none;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px">
+        <span style="font-size:18px;font-weight:900">G</span> Sign in with Google
+      </button>
+      <div style="margin-top:16px;font-size:12px;color:#b89060">Read-only access · Your data stays private</div>
+    </div>`;
+    return;
+  }
+  const emails=S.gmailEmails;
+  c.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div><div style="font-size:16px;font-weight:700;color:#78350f">Gmail Inbox</div><div style="font-size:12px;color:#b89060;margin-top:2px">${emails.length} emails loaded · Connected ✅</div></div>
+    <div style="display:flex;gap:6px"><button onclick="loadGmail()" class="btn-sun" style="padding:7px 12px;font-size:12px">🔄 Refresh</button><button onclick="gmailSignOut()" class="btn-outline" style="padding:7px 12px;font-size:12px">Sign out</button></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <input class="inp" id="gmail-search" placeholder="Search emails..." value="${ec(S.gmailSearch)}" oninput="S.gmailSearch=this.value" onkeydown="if(event.key==='Enter')searchGmail()">
+    <button class="btn-sun" onclick="searchGmail()" style="padding:9px 14px;font-size:13px;flex-shrink:0">Search</button>
+  </div>
+  ${S.gmailError?`<div class="card" style="background:#fef2f2;border-color:#fca5a5;color:#dc2626;font-size:13px;font-weight:600">⚠️ ${ec(S.gmailError)}</div>`:""}
+  ${S.gmailLoading?`<div style="text-align:center;padding:40px;color:#b89060">⏳ Loading emails...</div>`:""}
+  ${emails.map(em=>`<div class="card" style="border-left:4px solid ${em.isUnread?'#ea4335':'#f0dfc0'}">
+    <div style="display:flex;align-items:flex-start;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap;align-items:center">
+          <span style="font-weight:700;color:#2d2013;font-size:13px">${ec(em.from||'')}</span>
+          ${em.isUnread?'<span style="background:#fef2f2;color:#dc2626;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;border:1px solid #fca5a5">UNREAD</span>':''}
+          <span style="font-size:11px;color:#b89060;margin-left:auto">${ec(em.date||'')}</span>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#2d2013;margin-bottom:4px">${ec(em.subject||'(No subject)')}</div>
+        <div style="font-size:12px;color:#7a5c3a;line-height:1.5">${ec(em.snippet||'')}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button onclick="addTaskFromEmail('${encodeURIComponent(JSON.stringify(em))}')" style="padding:4px 11px;background:#fff8e1;border:1px solid #fde68a;border-radius:7px;font-size:11px;font-weight:600;color:#b45309;cursor:pointer;font-family:inherit">➕ Add as Task</button>
+      <button onclick="draftReply('${encodeURIComponent(em.subject||'')}')" style="padding:4px 11px;background:#eff6ff;border:1px solid #93c5fd;border-radius:7px;font-size:11px;font-weight:600;color:#1d4ed8;cursor:pointer;font-family:inherit">✉️ Draft Reply</button>
+    </div>
+  </div>`).join("")}
+  ${!S.gmailLoading&&emails.length===0?`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">📭</div><div style="font-weight:600;color:#78350f">No emails loaded</div><button onclick="loadGmail()" class="btn-sun" style="margin-top:12px">Load Inbox</button></div>`:""}`;
+}
+
+function saveGcid(){const v=document.getElementById('gcid-inp')?.value?.trim();if(!v)return;localStorage.setItem('ta_gcid',v);alert('Client ID saved!');}
+
+function gmailSignIn(){
+  const clientId=GMAIL_CLIENT_ID;
+  const params=new URLSearchParams({client_id:clientId,redirect_uri:window.location.origin+window.location.pathname,response_type:'token',scope:GSCOPES,include_granted_scopes:'true',prompt:'select_account'});
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+params.toString();
+}
+
+function gmailSignOut(){S.gmailToken=null;S.gmailEmails=[];localStorage.removeItem('ta_gmail_token');render();}
+
+// Handle OAuth redirect
+(function(){
+  const hash=window.location.hash;
+  if(hash.includes('access_token')){
+    const p=new URLSearchParams(hash.slice(1));
+    const token=p.get('access_token');
+    if(token){S.gmailToken=token;localStorage.setItem('ta_gmail_token',token);window.history.replaceState(null,'',window.location.pathname);setTimeout(()=>loadGmail(),300);}
+  }else{
+    const saved=localStorage.getItem('ta_gmail_token');
+    if(saved)S.gmailToken=saved;
+  }
+})();
+
+function loadGmail(){
+  if(!S.gmailToken){render();return;}
+  S.gmailLoading=true;S.gmailError="";render();
+  fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q=in:inbox',{headers:{Authorization:`Bearer ${S.gmailToken}`}})
+    .then(r=>{
+      if(r.status===401){S.gmailToken=null;localStorage.removeItem('ta_gmail_token');S.gmailLoading=false;S.gmailError="Session expired — please sign in again.";render();return null;}
+      if(!r.ok){return r.json().then(e=>{S.gmailLoading=false;S.gmailError="Gmail error: "+(e.error?.message||r.status);render();return null;});}
+      return r.json();
+    })
+    .then(data=>{
+      if(!data)return;
+      if(!data.messages){S.gmailEmails=[];S.gmailLoading=false;render();return;}
+      const ids=data.messages.map(m=>m.id);
+      return Promise.all(ids.map(id=>fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,{headers:{Authorization:`Bearer ${S.gmailToken}`}}).then(r=>r.json())));
+    })
+    .then(msgs=>{
+      if(!msgs)return;
+      S.gmailEmails=msgs.filter(m=>m&&m.payload).map(m=>{
+        const hdrs=m.payload?.headers||[];
+        const hdr=n=>hdrs.find(h=>h.name===n)?.value||'';
+        const from=hdr('From').replace(/<[^>]*>/g,'').trim()||'Unknown';
+        return{id:m.id,from,subject:hdr('Subject')||'(No subject)',date:hdr('Date').substring(0,16),snippet:m.snippet||'',isUnread:(m.labelIds||[]).includes('UNREAD')};
+      });
+      S.gmailLoading=false;render();
+    })
+    .catch(err=>{S.gmailLoading=false;S.gmailError='Load failed: '+err.message;render();});
+}
+function searchGmail(){
+  if(!S.gmailToken||!S.gmailSearch.trim())return;
+  S.gmailLoading=true;render();
+  fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=15&q=${encodeURIComponent(S.gmailSearch)}`,{headers:{Authorization:`Bearer ${S.gmailToken}`}})
+    .then(r=>r.json()).then(data=>{
+      if(!data.messages){S.gmailEmails=[];S.gmailLoading=false;render();return;}
+      return Promise.all(data.messages.map(m=>fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,{headers:{Authorization:`Bearer ${S.gmailToken}`}}).then(r=>r.json())));
+    }).then(msgs=>{
+      if(!msgs)return;
+      S.gmailEmails=msgs.map(m=>{const hdrs=m.payload?.headers||[];const hdr=n=>hdrs.find(h=>h.name===n)?.value||'';return{id:m.id,from:hdr('From').replace(/<.*>/,'').trim(),subject:hdr('Subject'),date:hdr('Date').substring(0,16),snippet:m.snippet||'',isUnread:(m.labelIds||[]).includes('UNREAD')};});
+      S.gmailLoading=false;render();
+    }).catch(()=>{S.gmailLoading=false;render();});
+}
+function addTaskFromEmail(enc){
+  try{
+    const em=JSON.parse(decodeURIComponent(enc));
+    const id=Date.now();
+    const t={id,title:`Reply: ${em.subject}`,priority:"high",source:"gmail",sched:"today",customDate:"",done:false,remarks:[{id:Date.now(),date:tod(),time:tsNow(),dt:dtNow(),text:`From: ${em.from}\n${em.snippet}`}]};
+    S.tasks=[...S.tasks,t];render();fbWrite(`tasks/${id}`,t);
+    alert('Task added!');
+  }catch(e){}
+}
+function draftReply(subjectEnc){
+  const subject=decodeURIComponent(subjectEnc);
+  S.tab='agent';document.querySelectorAll('.nav-btn').forEach((b,j)=>b.classList.toggle('active',j===6));
+  document.getElementById('chat-footer').style.display='block';
+  render();
+  setTimeout(()=>{const ta=document.getElementById('chat-ta');if(ta){ta.value=`Draft a professional reply for email with subject: "${subject}"`;ta.focus();}},200);
+}
+
+// ── AI AGENT — Gemini Free ──
+function rAgent(c){
+  const msgs=S.chat.map(m=>{
+    if(m.r==="sys")return`<div class="msg sys">${ec(m.t)}</div>`;
+    if(m.r==="err")return`<div class="msg err">⚠️ ${ec(m.t)}</div>`;
+    return`<div class="msg ${m.r==="u"?"user":"bot"}">${ec(m.t)}${m.acts?acards(m.acts):""}</div>`;
+  }).join("");
+  const tp=S.thinking?`<div class="msg bot" style="display:flex;gap:5px;padding:10px 13px">${[0,1,2].map(i=>`<div style="width:7px;height:7px;border-radius:50%;background:#4285f4;animation:pulse 1.2s ease ${i*.2}s infinite"></div>`).join("")}</div>`:"";
+  c.innerHTML=`<div style="margin-bottom:10px">
+    <div style="font-size:16px;font-weight:700;color:#78350f">AI Chat
+      <span style="font-size:11px;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:20px;font-weight:600;border:1px solid #a5d6a7;margin-left:6px">⚡ 2.5 Flash</span>
+      <span style="font-size:11px;background:#e8f0fe;color:#1a237e;padding:2px 8px;border-radius:20px;font-weight:600;border:1px solid #90caf9;margin-left:4px">📄 PDF → 2.5 Pro</span>
+    </div>
+    <div style="font-size:12px;color:#b89060;margin-top:2px">Fast AI for chat · Smart switch to Pro for PDFs</div>
+  </div>
+  ${!getApiKey()?`<div class="card" style="border:2px solid #4285f4;background:#e8f0fe;margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px">🔑</div><div><div style="font-weight:700;color:#1a237e;margin-bottom:4px">Gemini API Key Required (Free!)</div><div style="font-size:13px;color:#283593;margin-bottom:8px">Get a free key at aistudio.google.com — no credit card needed.</div><button class="btn-sun" onclick="showApiModal()">Set Gemini Key</button></div></div></div>`:""}
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${["What's critical today?","Add task: call Raj 3pm","Mark all high priority done","Show unscheduled tasks"].map(s=>`<button onclick="qs('${s}')" style="padding:4px 11px;background:#e8f0fe;border:1px solid #90caf9;border-radius:20px;color:#1565c0;cursor:pointer;font-size:11px;font-family:inherit">${s}</button>`).join("")}
+  </div>
+  <div id="chatbox" style="background:#fff;border:1.5px solid #f0dfc0;border-radius:14px;min-height:200px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;margin-bottom:6px">${msgs}${tp}<div id="chat-end"></div></div>`;
+  scr();
+}
+
+function acards(acts){
+  if(!acts||!acts.length)return"";
+  return`<div class="action-card" style="white-space:normal"><div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:7px">✨ ${acts.length} item${acts.length>1?"s":""} extracted:</div>${acts.map((a,i)=>`<div class="ai-item" onclick="addOne(${i},'${encodeURIComponent(JSON.stringify(a))}')"><div style="flex:1"><div style="font-size:13px;font-weight:600;color:#2d2013;margin-bottom:3px">${ec(a.title||a.task||"")}</div><div style="display:flex;gap:5px;flex-wrap:wrap">${pt(a.priority||"medium")}${a.type==="wa"?`<span style="font-size:11px;background:#f0fff4;color:#16a34a;padding:2px 7px;border-radius:4px;border:1px solid #86efac">💬 WA</span>`:""}</div></div><div style="font-size:18px;color:#16a34a;font-weight:700">+</div></div>`).join("")}<button onclick="addAll('${encodeURIComponent(JSON.stringify(acts))}')" style="width:100%;margin-top:6px;padding:8px;background:linear-gradient(135deg,#f9a825,#f57c00);border:none;color:#fff;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Add All (${acts.length})</button></div>`;
+}
+
+function addOne(idx,enc){try{const a=JSON.parse(decodeURIComponent(enc));const id=Date.now();if(a.type==="wa"){const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};S.wa=[...S.wa,w];fbWrite(`wa/${id}`,w);S.chat=[...S.chat,{r:"sys",t:`✅ WA reminder saved`}];}else{const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};S.tasks=[...S.tasks,t];fbWrite(`tasks/${id}`,t);S.chat=[...S.chat,{r:"sys",t:`✅ Task added: "${t.title}"`}];}render();scr();}catch(ex){}}
+function addAll(enc){try{const acts=JSON.parse(decodeURIComponent(enc));let tk=0,wa=0;acts.forEach(a=>{const id=Date.now()+Math.random();if(a.type==="wa"){const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};S.wa=[...S.wa,w];fbWrite(`wa/${id}`,w);wa++;}else{const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};S.tasks=[...S.tasks,t];fbWrite(`tasks/${id}`,t);tk++;}});S.chat=[...S.chat,{r:"sys",t:`✅ Added ${tk} tasks, ${wa} WA reminders`}];render();scr();}catch(ex){}}
+
+function handlePDF(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{S.pdf=ev.target.result.split(",")[1];S.pdfName=f.name;document.getElementById("pdf-badge").innerHTML=`<span class="pdf-badge">📄 ${ec(f.name)}</span>`;document.getElementById("clear-pdf").style.display="inline-block";document.getElementById("chat-ta").placeholder=`"${f.name}" loaded — press Send to analyze`;};r.readAsDataURL(f);inp.value="";}
+function clearPDF(){S.pdf=null;S.pdfName="";document.getElementById("pdf-badge").innerHTML="";document.getElementById("clear-pdf").style.display="none";document.getElementById("chat-ta").placeholder="Ask AI to manage your tasks, add reminders, analyze PDFs...";}
+function qs(t){document.getElementById("chat-ta").value=t;sendChat();}
+
+// ── GEMINI API — smart model selection ──
+async function callGemini(prompt, pdfData){
+  const key=getApiKey();if(!key)throw new Error('NO_KEY');
+  // Use Pro for PDFs (complex analysis), Flash for regular chat (fast & cheap)
+  const model=pdfData?'gemini-2.5-pro':'gemini-2.5-flash';
+  const parts=pdfData?[{inline_data:{mime_type:"application/pdf",data:pdfData}},{text:prompt}]:[{text:prompt}];
+  const body={contents:[{parts}],generationConfig:{maxOutputTokens:1500,temperature:0.7}};
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message||'Gemini error');
+  return data.candidates?.[0]?.content?.parts?.[0]?.text||"Sorry, no response.";
+}
+
+async function sendChat(){
+  const ta=document.getElementById("chat-ta");const txt=(ta?.value||"").trim();const hasPDF=!!S.pdf;
+  if(!txt&&!hasPDF)return;if(S.thinking)return;
+  if(!getApiKey()){showApiModal();return;}
+  if(ta){ta.value="";ta.style.height="auto";}
+  S.chat=[...S.chat,{r:hasPDF?"pdf":"u",t:hasPDF?`📄 ${S.pdfName}${txt?" — "+txt:""}`:txt}];
+  S.thinking=true;render();scr();
+  const pnd=S.tasks.filter(t=>!t.done);
+  const sys=`You are TaskAgent OS — an AI assistant managing tasks and reminders. Today: ${tod()} ${tsNow()}.
+Current tasks (${pnd.length} pending): ${JSON.stringify(pnd.slice(0,8).map(t=>({id:t.id,title:t.title,priority:t.priority,sched:t.sched})))}
+WA reminders pending: ${S.wa.filter(w=>!w.sent).length}
+
+You can help the user:
+- Create tasks, set priorities, schedule them
+- Answer questions about their tasks
+- Extract tasks from free text or PDFs
+- Draft messages and emails
+
+WHEN USER TYPES FREE TEXT WITH TASKS/MEETINGS: extract and append JSON:
+\`\`\`json
+[{"type":"task","title":"...","priority":"critical|high|medium|low"},{"type":"wa","contact":"...","message":"...","priority":"..."}]
+\`\`\`
+WHEN PDF UPLOADED: analyze fully, extract all action items, deadlines. Return comprehensive JSON.
+For normal questions: respond conversationally, max 150 words, use bullet points.`;
+
+  try{
+    const pdfD=hasPDF?S.pdf:null;
+    if(hasPDF)clearPDF();
+    const prompt=`${sys}\n\nUser: ${txt||"Analyze the uploaded PDF and extract all tasks, action items, and reminders."}`;
+    let rep=await callGemini(prompt,pdfD);
+    let acts=null;
+    const jm=rep.match(/```json\s*([\s\S]*?)```/);
+    if(jm){try{const p=JSON.parse(jm[1].trim());if(Array.isArray(p)&&p.length)acts=p;}catch(ex){}rep=rep.replace(/```json[\s\S]*?```/g,"").trim();}
+    S.chat=[...S.chat,{r:"a",t:rep,acts}];
+  }catch(ex){
+    S.chat=[...S.chat,{r:"err",t:ex.message==="NO_KEY"?"Gemini API key not set. Tap 🔑 Gemini to add your free key.":"Gemini error: "+ex.message}];
+  }
+  S.thinking=false;render();scr();
+}
+
+// ── FIREBASE POLLING — smart ──
+let lastTasksJSON="",lastWaJSON="";
+function pollFirebase(){
+  if(Date.now()-S.lastWrite<4000)return;
+  fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
+    const j=JSON.stringify(data);if(j===lastTasksJSON)return;lastTasksJSON=j;
+    S.tasks=data?Object.values(data):[];dot('');render();
+  }).catch(()=>dot('er'));
+  fetch(`${FB}/wa.json`).then(r=>r.json()).then(data=>{
+    const j=JSON.stringify(data);if(j===lastWaJSON)return;lastWaJSON=j;
+    S.wa=data?Object.values(data):[];if(S.tab==="wa")render();
+  }).catch(()=>{});
+}
+pollFirebase();
+setInterval(pollFirebase,5000);
+
+// Load Gmail if token exists
+if(S.gmailToken)setTimeout(()=>loadGmail(),500);
+
+document.getElementById('loading').style.display='none';
+document.getElementById('app').style.display='flex';
+render();
+</script>
+</body>
+</html>
