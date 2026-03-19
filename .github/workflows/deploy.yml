@@ -15,5 +15,5 @@ jobs:
           curl -v \
             --user "u344800990.aldancare.com:${{ secrets.FTP_PASSWORD }}" \
             -T index.html \
-            "ftp://77.37.37.73/domains/aldancare.com/public_html/tasks/index.html" \
+            "ftp://77.37.37.73/tasks/index.html" \
             --ftp-pasv 2>&1 | tail -15
