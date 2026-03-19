@@ -319,8 +319,25 @@ function addTask(){
   if(!title)return alert("Enter a title");
   const id=Date.now();
   const newT={id,title,priority:S.nT.priority,source:"manual",sched:S.nT.sched,customDate:S.nT.customDate||"",done:false,remarks:[]};
-  S.tasks=[...S.tasks,newT];S.nT={title:"",priority:"medium",sched:"none",customDate:""};S.showAddTask=false;
-  render();fbWrite(`tasks/${id}`,newT);
+  S.tasks=[...S.tasks,newT];
+  S.nT={title:"",priority:"medium",sched:"none",customDate:""};
+  S.showAddTask=false;
+  render();
+  // Write and confirm - keep lastWrite alive until Firebase confirms
+  S.lastWrite=Date.now();
+  dot('sy');
+  fetch(`${FB}/tasks/${id}.json`,{method:'PUT',body:JSON.stringify(newT)})
+    .then(r=>{
+      if(r.ok){
+        dot('');
+        S.lastWrite=Date.now(); // Extend guard — task is safely saved
+        lastTasksJSON=""; // Force next poll to re-read and include new task
+      } else {
+        dot('er');
+        alert("Task save failed — please try again");
+      }
+    })
+    .catch(()=>{dot('er');alert("Task save failed — check connection");});
 }
 function addWa(){
   const contact=document.getElementById("wa-c")?.value?.trim();
@@ -842,7 +859,7 @@ function pollFirebase(){
   fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
     if(!data){S.tasks=[];dot('');render();return;}
     const incoming=Object.values(data);
-    const j=JSON.stringify(incoming.map(t=>t.id+'|'+t.sched+'|'+t.customDate+'|'+t.targetDate+'|'+t.done).sort().join());
+    const j=JSON.stringify(incoming.map(t=>t.id+'|'+t.sched+'|'+t.customDate+'|'+t.done+'|'+t.title).sort().join());
     if(j===lastTasksJSON)return; // No change
     lastTasksJSON=j;
     S.tasks=incoming;
