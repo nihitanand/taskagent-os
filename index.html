@@ -474,11 +474,11 @@ function rSheet(c){
   const today=todayIST();
   let html=`<div style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px">
     <div style="font-size:16px;font-weight:700;color:#78350f">📅 Daily Task Sheet</div>
-    <div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · Auto-shifts dates at midnight IST · Auto-deploy ✅</div>
+    <div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · Auto-shifts dates at midnight IST · Tap to collapse</div>
   </div>`;
   let any=false;
   sections.forEach(([s,lbl,col,bg])=>{
-    const ts=azTasks(S.tasks.filter(t=>t.sched===s&&!t.done&&(s!=='custom'||t.customDate)));
+    const ts=azTasks(S.tasks.filter(t=>t.sched===s&&!t.done&&(s!=='custom'||true)));
     if(!ts.length)return;any=true;
     html+=collHdr(lbl,ts.length,s,S.collSheet,col,bg);
     if(S.collSheet[s])html+=`<div style="margin-bottom:12px">${ts.map(t=>tCard(t)).join("")}</div>`;
