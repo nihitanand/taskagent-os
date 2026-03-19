@@ -407,14 +407,19 @@ function tCard(t){
 // ── COLLAPSIBLE SECTION HEADER ──
 function collHdr(label,count,key,stateObj,color,bg){
   const open=!!stateObj[key];
-  const objName=stateObj===S.collSheet?'S.collSheet':'S.collAll';
-  return`<div class="coll-hdr" onclick="${objName}['${key}']=!${objName}['${key}'];render()">
+  const isSheet=stateObj===S.collSheet;
+  return`<div class="coll-hdr" onclick="toggle_coll('${isSheet?'sheet':'all'}','${key}')">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:14px;font-weight:700;color:${color}">${label}</span>
       <span style="background:${bg};color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700">${count}</span>
     </div>
-    <span class="coll-arrow ${open?'open':''}">▶</span>
+    <span style="font-size:12px;color:#b89060;transition:transform .2s;display:inline-block;transform:rotate(${open?90:0}deg)">▶</span>
   </div>`;
+}
+function toggle_coll(which,key){
+  if(which==='sheet')S.collSheet[key]=!S.collSheet[key];
+  else S.collAll[key]=!S.collAll[key];
+  render();
 }
 
 // ── DASHBOARD ──
@@ -813,12 +818,14 @@ let lastTasksJSON="",lastWaJSON="";
 function pollFirebase(){
   if(Date.now()-S.lastWrite<4000)return;
   fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
-    const j=JSON.stringify(data);if(j===lastTasksJSON)return;lastTasksJSON=j;
+    const j=JSON.stringify(data);
+    if(j===lastTasksJSON)return;
+    lastTasksJSON=j;
     S.tasks=data?Object.values(data):[];
+    // Run auto-shift; if anything changed, clear cache so next poll re-reads fresh data
     const shifted=autoShiftDates();
-    if(!shifted){dot('');render();}
-    // If shifted, fbWrite already called, render will happen after writes settle
-    else{dot('');setTimeout(()=>render(),500);}
+    if(shifted)lastTasksJSON="";
+    dot('');render();
   }).catch(()=>dot('er'));
   fetch(`${FB}/wa.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastWaJSON)return;lastWaJSON=j;
