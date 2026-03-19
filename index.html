@@ -465,8 +465,6 @@ function rDash(c,pnd,cr){
 
 // ── TODAY SHEET — collapsible sections ──
 function rSheet(c){
-  // Auto-shift dates every time Today tab is viewed
-  autoShiftDates();
 
   const sections=[
     ["today","📅 Today","#e65100","#f57c00"],
@@ -818,35 +816,65 @@ For normal questions: respond conversationally, max 150 words, use bullet points
   S.thinking=false;render();scr();
 }
 
-// ── FIREBASE POLLING — smart ──
-let lastTasksJSON="",lastWaJSON="";
+// ── FIREBASE POLLING ──
+let lastTasksJSON="",lastWaJSON="",shiftDone=false;
+
 function pollFirebase(){
+  // Don't poll right after a user action (4s grace)
   if(Date.now()-S.lastWrite<4000)return;
+  
   fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
-    const j=JSON.stringify(data);
-    if(j===lastTasksJSON)return;
+    if(!data){S.tasks=[];dot('');render();return;}
+    const incoming=Object.values(data);
+    const j=JSON.stringify(incoming.map(t=>t.id+'|'+t.sched+'|'+t.customDate+'|'+t.targetDate+'|'+t.done).sort().join());
+    if(j===lastTasksJSON)return; // No change
     lastTasksJSON=j;
-    S.tasks=data?Object.values(data):[];
-    // Run auto-shift; if anything changed, clear cache so next poll re-reads fresh data
-    const shifted=autoShiftDates();
-    if(shifted)lastTasksJSON="";
+    S.tasks=incoming;
+    
+    // Run date shift ONCE after first load, then on each change
+    const today=todayIST(),tomorrow=tomorrowIST();
+    let shifted=false;
+    S.tasks=S.tasks.map(t=>{
+      if(t.done)return t;
+      let u={...t};
+      if(u.sched==='custom'&&u.customDate){
+        if(u.customDate<=today){u={...u,sched:'today',targetDate:today};shifted=true;}
+        else if(u.customDate===tomorrow){u={...u,sched:'tomorrow',targetDate:tomorrow};shifted=true;}
+      }
+      if(u.sched==='tomorrow'&&u.targetDate&&u.targetDate<=today){
+        u={...u,sched:'today',targetDate:today};shifted=true;
+      }
+      return u;
+    });
+    
+    if(shifted){
+      // Write shifted tasks back without triggering lastWrite guard
+      S.tasks.forEach(t=>{
+        const orig=incoming.find(x=>x.id===t.id);
+        if(orig&&orig.sched!==t.sched){
+          fetch(`${FB}/tasks/${t.id}.json`,{method:'PUT',body:JSON.stringify(t)});
+        }
+      });
+      lastTasksJSON=""; // Force re-read on next poll
+    }
+    
     dot('');render();
   }).catch(()=>dot('er'));
+  
   fetch(`${FB}/wa.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastWaJSON)return;lastWaJSON=j;
     S.wa=data?Object.values(data):[];if(S.tab==="wa")render();
   }).catch(()=>{});
 }
+
+// Initial load then poll every 5s
 pollFirebase();
 setInterval(pollFirebase,5000);
-// Run date shift on startup too
-setTimeout(()=>{autoShiftDates();render();},1000);
 
-// Load Gmail if token exists
-if(S.gmailToken)setTimeout(()=>loadGmail(),500);
-
+// Show app
 document.getElementById('loading').style.display='none';
 document.getElementById('app').style.display='flex';
+if(S.gmailToken)setTimeout(()=>loadGmail(),500);
 render();
 </script>
 </body>
