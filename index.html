@@ -159,7 +159,6 @@ let S = {
   remarkingId:null, showRemarksId:null, editingId:null,
   // Collapsible section state — Today tab
   collSheet:{today:false,tomorrow:false,custom:false,done:false,unscheduled:false},
-  // Collapsible section state — All Tasks tab
   collAll:{manual:false,gmail:false,wa:false,done:false},
   nT:{title:"",priority:"medium",sched:"none",customDate:""},
   nW:{contact:"",msg:"",time:"",priority:"medium"},
@@ -201,42 +200,29 @@ function fmtDate(d){
 function autoShiftDates(){
   const today=todayIST();
   const tomorrow=tomorrowIST();
-  let changed=false;
+  const toWrite=[];
   S.tasks=S.tasks.map(t=>{
     if(t.done)return t;
-    let updated={...t};
-
-    // "tomorrow" sched — check if target date has arrived
-    if(t.sched==='tomorrow'){
-      const target=t.targetDate||'';
-      if(target && target<=today){
-        updated={...updated,sched:'today',targetDate:today};
-        changed=true;
-      }
+    let u={...t};
+    // tomorrow sched: check if targetDate arrived
+    if(u.sched==='tomorrow'&&u.targetDate&&u.targetDate<=today){
+      u={...u,sched:'today',targetDate:today};
+      toWrite.push(u);
     }
-
-    // "custom" sched — smart promote based on date proximity
-    if(t.sched==='custom'&&t.customDate){
-      if(t.customDate<=today){
-        // Today or overdue → move to Today
-        updated={...updated,sched:'today',targetDate:today};
-        changed=true;
-      } else if(t.customDate===tomorrow){
-        // Custom date is tomorrow → move to Tomorrow section
-        updated={...updated,sched:'tomorrow',targetDate:tomorrow};
-        changed=true;
-      }
-      // 2+ days away → stays in Custom/Scheduled
+    // custom sched: promote based on date
+    if(u.sched==='custom'&&u.customDate){
+      if(u.customDate<=today){u={...u,sched:'today',targetDate:today};toWrite.push(u);}
+      else if(u.customDate===tomorrow){u={...u,sched:'tomorrow',targetDate:tomorrow};toWrite.push(u);}
     }
-
-    // Write changed tasks to Firebase
-    if(changed && JSON.stringify(updated)!==JSON.stringify(t)){
-      fbWrite(`tasks/${updated.id}`,updated);
-    }
-
-    return updated;
+    return u;
   });
-  return changed;
+  // Write all changed tasks to Firebase without triggering poll guard
+  toWrite.forEach(t=>{
+    dot('sy');
+    fetch(`${FB}/tasks/${t.id}.json`,{method:'PUT',body:JSON.stringify(t)})
+      .then(()=>dot('')).catch(()=>dot('er'));
+  });
+  return toWrite.length>0;
 }
 function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️":h<17?"Good afternoon! 🌤":"Good evening! 🌅"}
 function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
