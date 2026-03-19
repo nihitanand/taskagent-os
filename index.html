@@ -258,7 +258,17 @@ function setSched(id,s){
   if(s==='none') changes.targetDate='';
   upd(id,changes);
 }
-function setCDate(id,d){upd(id,{customDate:d});}
+function setCDate(id,d){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const today=todayIST(),tomorrow=tomorrowIST();
+  let newSched='custom';
+  if(d<=today) newSched='today';
+  else if(d===tomorrow) newSched='tomorrow';
+  const updated={...t,customDate:d,sched:newSched,targetDate:newSched==='tomorrow'?tomorrow:newSched==='today'?today:''};
+  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  updateCard(id);
+  fbWrite(`tasks/${id}`,updated);
+}
 function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
 
 // ── MULTI-REMARK WITH TIMESTAMP ──
@@ -476,7 +486,6 @@ function rSheet(c){
   const unsch=azTasks(S.tasks.filter(t=>t.sched==='none'&&!t.done));
   if(unsch.length){
     any=true;
-    S.collSheet.unscheduled=S.collSheet.unscheduled||false;
     html+=collHdr("⏳ Unscheduled",unsch.length,"unscheduled",S.collSheet,"#6b7280","#9ca3af");
     if(S.collSheet.unscheduled)html+=`<div style="margin-bottom:12px">${unsch.map(t=>`
       <div style="background:#fff;border:1px solid #f0dfc0;border-radius:12px;margin-bottom:8px;overflow:hidden">
@@ -534,13 +543,7 @@ function rManual(c){
     </div>${addForm}
     <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">${fl.map(f=>{const s=PRI[f];return`<button onclick="S.filterPri='${f}';render()" style="padding:4px 12px;border-radius:20px;border:1.5px solid ${S.filterPri===f?(s?.bd||'#f5a623'):'#e8cfa0'};background:${S.filterPri===f?(s?.bg||'#fff8e1'):'#fff'};color:${S.filterPri===f?(s?.color||'#d47c20'):'#b89060'};font-size:12px;cursor:pointer;font-family:inherit;font-weight:${S.filterPri===f?700:400};text-transform:capitalize">${f}</button>`;}).join("")}</div>
     ${filtered.map(t=>tCard(t)).join("")||`<div style="text-align:center;padding:30px;color:#b89060;font-size:13px">No tasks here.</div>`}
-    ${done.length>0?`<div style="margin-top:12px">
-      <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:8px;padding:8px 0;border-top:1px solid #f0dfc0;cursor:pointer" onclick="S.collAll.done=!S.collAll.done;render()">
-        ${S.collAll.done?'▼':'▶'} ✅ Completed (${done.length})
-      </div>
-      ${S.collAll.done?done.map(t=>tCard(t)).join(""):""}
-    </div>`:""}`;
-}
+    ${done.length>0?`<div style="margin-top:12px">${collHdr("✅ Completed",done.length,"done",S.collAll,"#16a34a","#16a34a")}${S.collAll.done?done.map(t=>tCard(t)).join(""):""}</div>`:""}`;}
 
 // ── ALL TASKS — grouped by source, collapsible ──
 function rAll(c){
@@ -562,12 +565,10 @@ function rAll(c){
   });
   // Done
   if(done.length){
-    html+=`<div style="margin-top:8px">
-      <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:8px;padding:8px 0;border-top:1px solid #f0dfc0;cursor:pointer" onclick="S.collAll.done=!S.collAll.done;render()">
-        ${S.collAll.done?'▼':'▶'} ✅ Completed (${done.length})
-      </div>
-      ${S.collAll.done?done.map(t=>tCard(t)).join(""):""}
-    </div>`;
+    html+=`<div style="margin-top:8px">`;
+    html+=collHdr("✅ Completed",done.length,"done",S.collAll,"#16a34a","#16a34a");
+    if(S.collAll.done)html+=`<div style="margin-bottom:12px">${done.map(t=>tCard(t)).join("")}</div>`;
+    html+=`</div>`;
   }
   c.innerHTML=html;
 }
