@@ -237,8 +237,24 @@ function azTasks(arr){return[...arr].sort((a,b)=>a.title.localeCompare(b.title))
 document.getElementById("gsub").textContent=greet();
 
 // ── FIREBASE ──
-function fbWrite(path,data){S.lastWrite=Date.now();dot('sy');fetch(`${FB}/${path}.json`,{method:'PUT',body:JSON.stringify(data)}).then(r=>dot(r.ok?'':'')).catch(()=>dot('er'));}
-function fbDel(path){S.lastWrite=Date.now();dot('sy');fetch(`${FB}/${path}.json`,{method:'DELETE'}).then(()=>dot('')).catch(()=>dot('er'));}
+function fbWrite(path,data){
+  S.lastWrite=Date.now();
+  dot('sy');
+  fetch(`${FB}/${path}.json`,{method:'PUT',body:JSON.stringify(data)})
+    .then(r=>{
+      if(r.ok){dot('');}
+      else{dot('er');}
+      S.lastWrite=Date.now(); // Extend guard until confirmed
+    })
+    .catch(()=>{dot('er');});
+}
+function fbDel(path){
+  S.lastWrite=Date.now();
+  dot('sy');
+  fetch(`${FB}/${path}.json`,{method:'DELETE'})
+    .then(()=>{dot('');S.lastWrite=Date.now();})
+    .catch(()=>dot('er'));
+}
 
 // ── OPTIMISTIC ACTIONS ──
 function upd(id,changes){
