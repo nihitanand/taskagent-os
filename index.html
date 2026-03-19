@@ -178,7 +178,7 @@ function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️
 function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
 function autoR(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px"}
 function scr(){setTimeout(()=>document.getElementById("chat-end")?.scrollIntoView({behavior:"smooth"}),80)}
-function getApiKey(){return localStorage.getItem('ta_gemini_key')||'AIzaSyB8Og5Bad7eg4W62U0IMMscCDkOBZu_I5Y';}
+function getApiKey(){return localStorage.getItem('ta_gemini_key')||'';}
 function showApiModal(){document.getElementById('apikey-inp').value=getApiKey();document.getElementById('apikey-status').textContent=getApiKey()?'✅ Gemini key is set':'';document.getElementById('api-modal').classList.add('show');}
 function closeApiModal(){document.getElementById('api-modal').classList.remove('show');}
 function saveApiKey(){const k=document.getElementById('apikey-inp').value.trim();if(!k)return;localStorage.setItem('ta_gemini_key',k);document.getElementById('apikey-status').innerHTML='✅ Saved!';setTimeout(()=>closeApiModal(),900);}
@@ -744,4 +744,3 @@ render();
 </script>
 </body>
 </html>
-<!-- auto-deploy test Tue Mar 17 05:18:59 UTC 2026 -->
