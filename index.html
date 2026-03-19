@@ -197,10 +197,7 @@ function fmtDate(d){
   return`${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
 }
 
-// ── SMART DATE SHIFT — runs on every poll & page load ──
-// When a task is marked "tomorrow" we store targetDate=tomorrowIST()
-// Each time we check: if targetDate <= todayIST() → promote to "today"
-// For custom dates: if customDate <= todayIST() → today, if = tomorrowIST() → tomorrow
+// ── SMART DATE SHIFT ──
 function autoShiftDates(){
   const today=todayIST();
   const tomorrow=tomorrowIST();
@@ -208,7 +205,8 @@ function autoShiftDates(){
   S.tasks=S.tasks.map(t=>{
     if(t.done)return t;
     let updated={...t};
-    // Handle "tomorrow" sched — check if target date has arrived
+
+    // "tomorrow" sched — check if target date has arrived
     if(t.sched==='tomorrow'){
       const target=t.targetDate||tomorrow;
       if(target<=today){
@@ -217,28 +215,26 @@ function autoShiftDates(){
         fbWrite(`tasks/${t.id}`,updated);
       }
     }
-    // Handle "custom" sched — auto-promote if date has arrived
+
+    // "custom" sched — smart promote based on date proximity
     if(t.sched==='custom'&&t.customDate){
-      if(t.customDate<today){
-        // Past due — move to today
-        updated={...updated,sched:'today'};
-        changed=true;
-        fbWrite(`tasks/${t.id}`,updated);
-      } else if(t.customDate===today){
-        // It's today!
-        updated={...updated,sched:'today'};
+      if(t.customDate<=today){
+        // Today or overdue → move to Today
+        updated={...updated,sched:'today',targetDate:today};
         changed=true;
         fbWrite(`tasks/${t.id}`,updated);
       } else if(t.customDate===tomorrow){
-        // It's tomorrow — show in tomorrow section
-        updated={...updated,sched:'tomorrow',targetDate:tomorrow};
+        // Custom date is tomorrow → show in Tomorrow section
+        updated={...updated,sched:'tomorrow',targetDate:tomorrow,customDate:t.customDate};
         changed=true;
         fbWrite(`tasks/${t.id}`,updated);
       }
+      // If 2+ days away → stays in Custom/Scheduled section
     }
+
     return updated;
   });
-  if(changed)render();
+  if(changed){S.lastWrite=Date.now();render();}
 }
 function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️":h<17?"Good afternoon! 🌤":"Good evening! 🌅"}
 function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
@@ -422,8 +418,9 @@ function tCard(t){
 
 // ── COLLAPSIBLE SECTION HEADER ──
 function collHdr(label,count,key,stateObj,color,bg){
-  const open=stateObj[key];
-  return`<div class="coll-hdr" onclick="${stateObj===S.collSheet?'S.collSheet':'S.collAll'}['${key}']=!${stateObj===S.collSheet?'S.collSheet':'S.collAll'}['${key}'];render()">
+  const open=!!stateObj[key];
+  const objName=stateObj===S.collSheet?'S.collSheet':'S.collAll';
+  return`<div class="coll-hdr" onclick="${objName}['${key}']=!${objName}['${key}'];render()">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:14px;font-weight:700;color:${color}">${label}</span>
       <span style="background:${bg};color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700">${count}</span>
@@ -486,13 +483,13 @@ function rSheet(c){
   const unsch=azTasks(S.tasks.filter(t=>t.sched==='none'&&!t.done));
   if(unsch.length){
     any=true;
-    if(!S.collSheet.hasOwnProperty('unscheduled'))S.collSheet.unscheduled=false;
+    S.collSheet.unscheduled=S.collSheet.unscheduled||false;
     html+=collHdr("⏳ Unscheduled",unsch.length,"unscheduled",S.collSheet,"#6b7280","#9ca3af");
     if(S.collSheet.unscheduled)html+=`<div style="margin-bottom:12px">${unsch.map(t=>`
-      <div class="tc" id="tc-u-${t.id}" style="margin-bottom:8px">
+      <div style="background:#fff;border:1px solid #f0dfc0;border-radius:12px;margin-bottom:8px;overflow:hidden">
         <div style="display:flex;align-items:center;gap:10px;padding:11px 13px">
           <div class="chk" onclick="toggleTask(${t.id})" style="border-color:${PRI[t.priority]?.color||'#d0c0a0'}">${t.done?"✓":""}</div>
-          <div style="flex:1;font-size:14px;font-weight:600;color:#2d2013">${ec(t.title)}</div>
+          <div style="flex:1;font-size:14px;font-weight:600;color:#2d2013;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ec(t.title)}</div>
           ${pt(t.priority)}
         </div>
         <div style="display:flex;gap:5px;padding:0 13px 10px;flex-wrap:wrap">
