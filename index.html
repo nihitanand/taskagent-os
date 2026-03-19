@@ -233,6 +233,7 @@ function showApiModal(){document.getElementById('apikey-inp').value=getApiKey();
 function closeApiModal(){document.getElementById('api-modal').classList.remove('show');}
 function saveApiKey(){const k=document.getElementById('apikey-inp').value.trim();if(!k)return;localStorage.setItem('ta_gemini_key',k);document.getElementById('apikey-status').innerHTML='✅ Saved!';setTimeout(()=>closeApiModal(),900);}
 function dot(st){const d=document.getElementById('sdot');if(!d)return;d.className=st;}
+function genId(){return Date.now()+'_'+Math.random().toString(36).slice(2,6);}
 function azTasks(arr){return[...arr].sort((a,b)=>a.title.localeCompare(b.title));}
 document.getElementById("gsub").textContent=greet();
 
@@ -296,7 +297,7 @@ function svRmk(id){
   const txt=document.getElementById(`rmk-${id}`)?.value?.trim();if(!txt)return alert("Enter a remark");
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
   // Each remark has unique id, date, time, text — multiple per day allowed
-  const newRmk={id:Date.now(),date:tod(),time:tsNow(),dt:dtNow(),text:txt};
+  const newRmk={id:genId(),date:tod(),time:tsNow(),dt:dtNow(),text:txt};
   const remarks=[...(t.remarks||[]),newRmk];
   const updated={...t,remarks};
   S.tasks=S.tasks.map(x=>x.id===id?updated:x);
@@ -317,7 +318,7 @@ function saveEdit(id){
 function addTask(){
   const title=document.getElementById("nt-t")?.value?.trim()||S.nT.title;
   if(!title)return alert("Enter a title");
-  const id=Date.now();
+  const id=genId();
   const newT={id,title,priority:S.nT.priority,source:"manual",sched:S.nT.sched,customDate:S.nT.customDate||"",done:false,remarks:[]};
   S.tasks=[...S.tasks,newT];
   S.nT={title:"",priority:"medium",sched:"none",customDate:""};
@@ -345,7 +346,7 @@ function addWa(){
   const time=document.getElementById("wa-t")?.value?.trim();
   const priority=document.getElementById("wa-p")?.value||"medium";
   if(!contact||!msg)return alert("Contact and message required");
-  const id=Date.now();
+  const id=genId();
   const newW={id,contact,msg,time:time||"Soon",sent:false,priority};
   S.wa=[...S.wa,newW];S.showAddWa=false;render();fbWrite(`wa/${id}`,newW);
 }
@@ -747,8 +748,8 @@ function searchGmail(){
 function addTaskFromEmail(enc){
   try{
     const em=JSON.parse(decodeURIComponent(enc));
-    const id=Date.now();
-    const t={id,title:`Reply: ${em.subject}`,priority:"high",source:"gmail",sched:"today",customDate:"",done:false,remarks:[{id:Date.now(),date:tod(),time:tsNow(),dt:dtNow(),text:`From: ${em.from}\n${em.snippet}`}]};
+    const id=genId();
+    const t={id,title:`Reply: ${em.subject}`,priority:"high",source:"gmail",sched:"today",customDate:"",done:false,remarks:[{id:genId(),date:tod(),time:tsNow(),dt:dtNow(),text:`From: ${em.from}\n${em.snippet}`}]};
     S.tasks=[...S.tasks,t];render();fbWrite(`tasks/${id}`,t);
     alert('Task added!');
   }catch(e){}
@@ -792,7 +793,7 @@ function acards(acts){
 function addOne(idx,enc){
   try{
     const a=JSON.parse(decodeURIComponent(enc));
-    const id=Date.now();
+    const id=genId();
     if(a.type==="wa"){
       const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};
       S.wa=[...S.wa,w];
@@ -821,7 +822,7 @@ function addAll(enc){
     let tk=0,wa=0;
     const writes=[];
     acts.forEach(a=>{
-      const id=Date.now()+Math.random();
+      const id=genId();
       if(a.type==="wa"){
         const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};
         S.wa=[...S.wa,w];
