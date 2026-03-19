@@ -158,7 +158,7 @@ let S = {
   showAddTask:false, showAddWa:false,
   remarkingId:null, showRemarksId:null, editingId:null,
   // Collapsible section state — Today tab
-  collSheet:{today:true,tomorrow:true,custom:true,done:false},
+  collSheet:{today:true,tomorrow:true,custom:true,done:false,unscheduled:false},
   // Collapsible section state — All Tasks tab
   collAll:{manual:true,gmail:true,wa:true,done:false},
   nT:{title:"",priority:"medium",sched:"none",customDate:""},
@@ -174,6 +174,72 @@ function ec(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").r
 function tod(){const d=new Date();return`${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]} ${d.getFullYear()}`}
 function tsNow(){const n=new Date();const h=n.getHours().toString().padStart(2,'0');const m=n.getMinutes().toString().padStart(2,'0');return`${h}:${m}`}
 function dtNow(){return`${tod()} ${tsNow()}`}
+
+// ── DATE HELPERS ──
+// Returns today's date as YYYY-MM-DD in IST
+function todayIST(){
+  const now=new Date();
+  // IST = UTC+5:30
+  const ist=new Date(now.getTime()+(5.5*60*60*1000));
+  return ist.toISOString().split('T')[0];
+}
+// Returns tomorrow's date as YYYY-MM-DD in IST
+function tomorrowIST(){
+  const now=new Date();
+  const ist=new Date(now.getTime()+(5.5*60*60*1000)+86400000);
+  return ist.toISOString().split('T')[0];
+}
+// Format YYYY-MM-DD to display string
+function fmtDate(d){
+  if(!d)return'';
+  const [y,m,day]=d.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return`${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+
+// ── SMART DATE SHIFT — runs on every poll & page load ──
+// When a task is marked "tomorrow" we store targetDate=tomorrowIST()
+// Each time we check: if targetDate <= todayIST() → promote to "today"
+// For custom dates: if customDate <= todayIST() → today, if = tomorrowIST() → tomorrow
+function autoShiftDates(){
+  const today=todayIST();
+  const tomorrow=tomorrowIST();
+  let changed=false;
+  S.tasks=S.tasks.map(t=>{
+    if(t.done)return t;
+    let updated={...t};
+    // Handle "tomorrow" sched — check if target date has arrived
+    if(t.sched==='tomorrow'){
+      const target=t.targetDate||tomorrow;
+      if(target<=today){
+        updated={...updated,sched:'today',targetDate:today};
+        changed=true;
+        fbWrite(`tasks/${t.id}`,updated);
+      }
+    }
+    // Handle "custom" sched — auto-promote if date has arrived
+    if(t.sched==='custom'&&t.customDate){
+      if(t.customDate<today){
+        // Past due — move to today
+        updated={...updated,sched:'today'};
+        changed=true;
+        fbWrite(`tasks/${t.id}`,updated);
+      } else if(t.customDate===today){
+        // It's today!
+        updated={...updated,sched:'today'};
+        changed=true;
+        fbWrite(`tasks/${t.id}`,updated);
+      } else if(t.customDate===tomorrow){
+        // It's tomorrow — show in tomorrow section
+        updated={...updated,sched:'tomorrow',targetDate:tomorrow};
+        changed=true;
+        fbWrite(`tasks/${t.id}`,updated);
+      }
+    }
+    return updated;
+  });
+  if(changed)render();
+}
 function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️":h<17?"Good afternoon! 🌤":"Good evening! 🌅"}
 function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
 function autoR(el){el.style.height="auto";el.style.height=Math.min(el.scrollHeight,120)+"px"}
@@ -199,7 +265,15 @@ function upd(id,changes){
 }
 function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{done:!t.done});}
 function setPri(id,p){upd(id,{priority:p});}
-function setSched(id,s){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{sched:s,customDate:s==='custom'?t.customDate:''});}
+function setSched(id,s){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const changes={sched:s,customDate:s==='custom'?t.customDate:''};
+  // Store target date when marking as tomorrow so auto-shift knows when to promote
+  if(s==='tomorrow') changes.targetDate=tomorrowIST();
+  if(s==='today') changes.targetDate=todayIST();
+  if(s==='none') changes.targetDate='';
+  upd(id,changes);
+}
 function setCDate(id,d){upd(id,{customDate:d});}
 function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
 
@@ -387,12 +461,19 @@ function rDash(c,pnd,cr){
 
 // ── TODAY SHEET — collapsible sections ──
 function rSheet(c){
+  // Auto-shift dates every time Today tab is viewed
+  autoShiftDates();
+
   const sections=[
     ["today","📅 Today","#e65100","#f57c00"],
     ["tomorrow","⏭ Tomorrow","#1565c0","#4a9eda"],
     ["custom","🗓 Scheduled","#6d28d9","#7c3aed"]
   ];
-  let html=`<div style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px"><div style="font-size:16px;font-weight:700;color:#78350f">📅 Daily Task Sheet</div><div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · Tap section to collapse/expand</div></div>`;
+  const today=todayIST();
+  let html=`<div style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:12px">
+    <div style="font-size:16px;font-weight:700;color:#78350f">📅 Daily Task Sheet</div>
+    <div style="font-size:12px;color:#a16207;margin-top:2px">${tod()} · Auto-shifts dates at midnight IST · Tap to collapse</div>
+  </div>`;
   let any=false;
   sections.forEach(([s,lbl,col,bg])=>{
     const ts=azTasks(S.tasks.filter(t=>t.sched===s&&!t.done&&(s!=='custom'||t.customDate)));
@@ -400,7 +481,30 @@ function rSheet(c){
     html+=collHdr(lbl,ts.length,s,S.collSheet,col,bg);
     if(S.collSheet[s])html+=`<div style="margin-bottom:12px">${ts.map(t=>tCard(t)).join("")}</div>`;
   });
-  if(!any)html+=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-weight:600;color:#78350f;margin-bottom:7px">No scheduled tasks</div><div style="color:#b89060;font-size:13px;margin-bottom:16px">Go to My Tasks and tap Today or Tomorrow</div><button class="btn-sun" onclick="navTo('manual',2)">✏️ Go to My Tasks</button></div>`;
+
+  // Unscheduled section
+  const unsch=azTasks(S.tasks.filter(t=>t.sched==='none'&&!t.done));
+  if(unsch.length){
+    any=true;
+    if(!S.collSheet.hasOwnProperty('unscheduled'))S.collSheet.unscheduled=false;
+    html+=collHdr("⏳ Unscheduled",unsch.length,"unscheduled",S.collSheet,"#6b7280","#9ca3af");
+    if(S.collSheet.unscheduled)html+=`<div style="margin-bottom:12px">${unsch.map(t=>`
+      <div class="tc" id="tc-u-${t.id}" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 13px">
+          <div class="chk" onclick="toggleTask(${t.id})" style="border-color:${PRI[t.priority]?.color||'#d0c0a0'}">${t.done?"✓":""}</div>
+          <div style="flex:1;font-size:14px;font-weight:600;color:#2d2013">${ec(t.title)}</div>
+          ${pt(t.priority)}
+        </div>
+        <div style="display:flex;gap:5px;padding:0 13px 10px;flex-wrap:wrap">
+          <button class="st st-t" onclick="setSched(${t.id},'today')">📅 Today</button>
+          <button class="st st-r" onclick="setSched(${t.id},'tomorrow')">⏭ Tomorrow</button>
+          <button class="st st-c" onclick="setSched(${t.id},'custom')">🗓 Custom</button>
+        </div>
+      </div>`).join("")}</div>`;
+  }
+
+  if(!any)html+=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-weight:600;color:#78350f;margin-bottom:7px">No tasks yet</div><button class="btn-sun" onclick="navTo('manual',2)">✏️ Go to My Tasks</button></div>`;
+
   // Done section — collapsible
   const done=azTasks(S.tasks.filter(t=>t.done));
   if(done.length){
@@ -725,7 +829,9 @@ function pollFirebase(){
   if(Date.now()-S.lastWrite<4000)return;
   fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastTasksJSON)return;lastTasksJSON=j;
-    S.tasks=data?Object.values(data):[];dot('');render();
+    S.tasks=data?Object.values(data):[];
+    autoShiftDates(); // Check for date promotions on every poll
+    dot('');render();
   }).catch(()=>dot('er'));
   fetch(`${FB}/wa.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastWaJSON)return;lastWaJSON=j;
