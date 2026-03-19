@@ -789,8 +789,60 @@ function acards(acts){
   return`<div class="action-card" style="white-space:normal"><div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:7px">✨ ${acts.length} item${acts.length>1?"s":""} extracted:</div>${acts.map((a,i)=>`<div class="ai-item" onclick="addOne(${i},'${encodeURIComponent(JSON.stringify(a))}')"><div style="flex:1"><div style="font-size:13px;font-weight:600;color:#2d2013;margin-bottom:3px">${ec(a.title||a.task||"")}</div><div style="display:flex;gap:5px;flex-wrap:wrap">${pt(a.priority||"medium")}${a.type==="wa"?`<span style="font-size:11px;background:#f0fff4;color:#16a34a;padding:2px 7px;border-radius:4px;border:1px solid #86efac">💬 WA</span>`:""}</div></div><div style="font-size:18px;color:#16a34a;font-weight:700">+</div></div>`).join("")}<button onclick="addAll('${encodeURIComponent(JSON.stringify(acts))}')" style="width:100%;margin-top:6px;padding:8px;background:linear-gradient(135deg,#f9a825,#f57c00);border:none;color:#fff;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">✅ Add All (${acts.length})</button></div>`;
 }
 
-function addOne(idx,enc){try{const a=JSON.parse(decodeURIComponent(enc));const id=Date.now();if(a.type==="wa"){const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};S.wa=[...S.wa,w];fbWrite(`wa/${id}`,w);S.chat=[...S.chat,{r:"sys",t:`✅ WA reminder saved`}];}else{const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};S.tasks=[...S.tasks,t];fbWrite(`tasks/${id}`,t);S.chat=[...S.chat,{r:"sys",t:`✅ Task added: "${t.title}"`}];}render();scr();}catch(ex){}}
-function addAll(enc){try{const acts=JSON.parse(decodeURIComponent(enc));let tk=0,wa=0;acts.forEach(a=>{const id=Date.now()+Math.random();if(a.type==="wa"){const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};S.wa=[...S.wa,w];fbWrite(`wa/${id}`,w);wa++;}else{const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};S.tasks=[...S.tasks,t];fbWrite(`tasks/${id}`,t);tk++;}});S.chat=[...S.chat,{r:"sys",t:`✅ Added ${tk} tasks, ${wa} WA reminders`}];render();scr();}catch(ex){}}
+function addOne(idx,enc){
+  try{
+    const a=JSON.parse(decodeURIComponent(enc));
+    const id=Date.now();
+    if(a.type==="wa"){
+      const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};
+      S.wa=[...S.wa,w];
+      S.chat=[...S.chat,{r:"sys",t:`✅ WA reminder saved`}];
+      render();scr();
+      S.lastWrite=Date.now();
+      fetch(`${FB}/wa/${id}.json`,{method:'PUT',body:JSON.stringify(w)})
+        .then(r=>{if(r.ok){dot('');S.lastWrite=Date.now();lastTasksJSON="";}else dot('er');})
+        .catch(()=>dot('er'));
+    } else {
+      const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};
+      S.tasks=[...S.tasks,t];
+      S.chat=[...S.chat,{r:"sys",t:`✅ Task added: "${t.title}"`}];
+      render();scr();
+      S.lastWrite=Date.now();
+      fetch(`${FB}/tasks/${id}.json`,{method:'PUT',body:JSON.stringify(t)})
+        .then(r=>{if(r.ok){dot('');S.lastWrite=Date.now();lastTasksJSON="";}else dot('er');})
+        .catch(()=>dot('er'));
+    }
+  }catch(ex){}
+}
+
+function addAll(enc){
+  try{
+    const acts=JSON.parse(decodeURIComponent(enc));
+    let tk=0,wa=0;
+    const writes=[];
+    acts.forEach(a=>{
+      const id=Date.now()+Math.random();
+      if(a.type==="wa"){
+        const w={id,contact:a.contact||"Team",msg:a.message||a.title||"",time:a.due||"Soon",sent:false,priority:a.priority||"medium"};
+        S.wa=[...S.wa,w];
+        writes.push(fetch(`${FB}/wa/${id}.json`,{method:'PUT',body:JSON.stringify(w)}));
+        wa++;
+      } else {
+        const t={id,title:a.title||a.task||"New task",priority:a.priority||"medium",source:"manual",sched:"none",customDate:"",done:false,remarks:[]};
+        S.tasks=[...S.tasks,t];
+        writes.push(fetch(`${FB}/tasks/${id}.json`,{method:'PUT',body:JSON.stringify(t)}));
+        tk++;
+      }
+    });
+    S.chat=[...S.chat,{r:"sys",t:`✅ Added ${tk} tasks, ${wa} WA reminders`}];
+    render();scr();
+    S.lastWrite=Date.now();
+    // Wait for ALL writes to confirm
+    Promise.all(writes).then(()=>{
+      dot('');S.lastWrite=Date.now();lastTasksJSON="";
+    }).catch(()=>dot('er'));
+  }catch(ex){}
+}
 
 function handlePDF(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{S.pdf=ev.target.result.split(",")[1];S.pdfName=f.name;document.getElementById("pdf-badge").innerHTML=`<span class="pdf-badge">📄 ${ec(f.name)}</span>`;document.getElementById("clear-pdf").style.display="inline-block";document.getElementById("chat-ta").placeholder=`"${f.name}" loaded — press Send to analyze`;};r.readAsDataURL(f);inp.value="";}
 function clearPDF(){S.pdf=null;S.pdfName="";document.getElementById("pdf-badge").innerHTML="";document.getElementById("clear-pdf").style.display="none";document.getElementById("chat-ta").placeholder="Ask AI to manage your tasks, add reminders, analyze PDFs...";}
