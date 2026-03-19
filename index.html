@@ -158,9 +158,9 @@ let S = {
   showAddTask:false, showAddWa:false,
   remarkingId:null, showRemarksId:null, editingId:null,
   // Collapsible section state — Today tab
-  collSheet:{today:true,tomorrow:true,custom:true,done:false,unscheduled:false},
+  collSheet:{today:false,tomorrow:false,custom:false,done:false,unscheduled:false},
   // Collapsible section state — All Tasks tab
-  collAll:{manual:true,gmail:true,wa:true,done:false},
+  collAll:{manual:false,gmail:false,wa:false,done:false},
   nT:{title:"",priority:"medium",sched:"none",customDate:""},
   nW:{contact:"",msg:"",time:"",priority:"medium"},
   pdf:null, pdfName:"",
@@ -208,11 +208,10 @@ function autoShiftDates(){
 
     // "tomorrow" sched — check if target date has arrived
     if(t.sched==='tomorrow'){
-      const target=t.targetDate||tomorrow;
-      if(target<=today){
+      const target=t.targetDate||'';
+      if(target && target<=today){
         updated={...updated,sched:'today',targetDate:today};
         changed=true;
-        fbWrite(`tasks/${t.id}`,updated);
       }
     }
 
@@ -222,19 +221,22 @@ function autoShiftDates(){
         // Today or overdue → move to Today
         updated={...updated,sched:'today',targetDate:today};
         changed=true;
-        fbWrite(`tasks/${t.id}`,updated);
       } else if(t.customDate===tomorrow){
-        // Custom date is tomorrow → show in Tomorrow section
-        updated={...updated,sched:'tomorrow',targetDate:tomorrow,customDate:t.customDate};
+        // Custom date is tomorrow → move to Tomorrow section
+        updated={...updated,sched:'tomorrow',targetDate:tomorrow};
         changed=true;
-        fbWrite(`tasks/${t.id}`,updated);
       }
-      // If 2+ days away → stays in Custom/Scheduled section
+      // 2+ days away → stays in Custom/Scheduled
+    }
+
+    // Write changed tasks to Firebase
+    if(changed && JSON.stringify(updated)!==JSON.stringify(t)){
+      fbWrite(`tasks/${updated.id}`,updated);
     }
 
     return updated;
   });
-  if(changed){S.lastWrite=Date.now();render();}
+  return changed;
 }
 function greet(){const h=new Date().getHours();return h<12?"Good morning! ☀️":h<17?"Good afternoon! 🌤":"Good evening! 🌅"}
 function pt(p){const s=PRI[p]||PRI.medium;return`<span class="tag" style="background:${s.bg};color:${s.color};border:1px solid ${s.bd}">${s.label}</span>`}
@@ -827,8 +829,10 @@ function pollFirebase(){
   fetch(`${FB}/tasks.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastTasksJSON)return;lastTasksJSON=j;
     S.tasks=data?Object.values(data):[];
-    autoShiftDates(); // Check for date promotions on every poll
-    dot('');render();
+    const shifted=autoShiftDates();
+    if(!shifted){dot('');render();}
+    // If shifted, fbWrite already called, render will happen after writes settle
+    else{dot('');setTimeout(()=>render(),500);}
   }).catch(()=>dot('er'));
   fetch(`${FB}/wa.json`).then(r=>r.json()).then(data=>{
     const j=JSON.stringify(data);if(j===lastWaJSON)return;lastWaJSON=j;
@@ -837,6 +841,8 @@ function pollFirebase(){
 }
 pollFirebase();
 setInterval(pollFirebase,5000);
+// Run date shift on startup too
+setTimeout(()=>{autoShiftDates();render();},1000);
 
 // Load Gmail if token exists
 if(S.gmailToken)setTimeout(()=>loadGmail(),500);
