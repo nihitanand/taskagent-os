@@ -9,16 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: 77.37.37.73
-          username: u344800990.aldancare.com
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          local-dir: ./
-          server-dir: /domains/aldancare.com/public_html/tasks/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .github/**
+
+      - name: Deploy index.html via curl FTP
+        run: |
+          curl -v --ftp-ssl \
+            --user "u344800990.aldancare.com:${{ secrets.FTP_PASSWORD }}" \
+            -T index.html \
+            "ftp://77.37.37.73/domains/aldancare.com/public_html/tasks/index.html" \
+            --ftp-pasv \
+            --insecure 2>&1 | tail -20
