@@ -158,7 +158,7 @@ let S = {
   showAddTask:false, showAddWa:false,
   remarkingId:null, showRemarksId:null, editingId:null,
   // Collapsible section state — Today tab
-  collSheet:{today:false,tomorrow:false,custom:false,done:false,unscheduled:false},
+  collSheet:{today:false,tomorrow:false,custom:false,done:false,unscheduled:true},
   collAll:{manual:false,gmail:false,wa:false,done:false},
   nT:{title:"",priority:"medium",sched:"none",customDate:""},
   nW:{contact:"",msg:"",time:"",priority:"medium"},
@@ -251,14 +251,18 @@ function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{
 function setPri(id,p){upd(id,{priority:p});}
 function setSched(id,s){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const today=todayIST(),tomorrow=tomorrowIST();
   const changes={sched:s,customDate:s==='custom'?t.customDate:''};
-  // Store target date when marking as tomorrow so auto-shift knows when to promote
-  if(s==='tomorrow') changes.targetDate=tomorrowIST();
-  if(s==='today') changes.targetDate=todayIST();
+  if(s==='tomorrow') changes.targetDate=tomorrow;
+  if(s==='today') changes.targetDate=today;
   if(s==='none') changes.targetDate='';
-  upd(id,changes);
+  const updated={...t,...changes};
+  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  fbWrite(`tasks/${id}`,updated);
+  render(); // Full render — task moves between sections
 }
 function setCDate(id,d){
+  if(!d)return;
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
   const today=todayIST(),tomorrow=tomorrowIST();
   let newSched='custom';
@@ -266,8 +270,8 @@ function setCDate(id,d){
   else if(d===tomorrow) newSched='tomorrow';
   const updated={...t,customDate:d,sched:newSched,targetDate:newSched==='tomorrow'?tomorrow:newSched==='today'?today:''};
   S.tasks=S.tasks.map(x=>x.id===id?updated:x);
-  updateCard(id);
   fbWrite(`tasks/${id}`,updated);
+  render(); // Full render needed — task moves between sections
 }
 function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
 
