@@ -259,48 +259,48 @@ function fbDel(path){
 
 // ── OPTIMISTIC ACTIONS ──
 function upd(id,changes){
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   const updated={...t,...changes};
-  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  S.tasks=S.tasks.map(x=>String(x.id)===String(id)?updated:x);
   updateCard(id);fbWrite(`tasks/${id}`,updated);
 }
-function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;upd(id,{done:!t.done});}
+function toggleTask(id){const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;upd(id,{done:!t.done});}
 function setPri(id,p){upd(id,{priority:p});}
 function setSched(id,s){
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   const today=todayIST(),tomorrow=tomorrowIST();
   const changes={sched:s,customDate:s==='custom'?t.customDate:''};
   if(s==='tomorrow') changes.targetDate=tomorrow;
   if(s==='today') changes.targetDate=today;
   if(s==='none') changes.targetDate='';
   const updated={...t,...changes};
-  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  S.tasks=S.tasks.map(x=>String(x.id)===String(id)?updated:x);
   fbWrite(`tasks/${id}`,updated);
   render(); // Full render — task moves between sections
 }
 function setCDate(id,d){
   if(!d)return;
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   const today=todayIST(),tomorrow=tomorrowIST();
   let newSched='custom';
   if(d<=today) newSched='today';
   else if(d===tomorrow) newSched='tomorrow';
   const updated={...t,customDate:d,sched:newSched,targetDate:newSched==='tomorrow'?tomorrow:newSched==='today'?today:''};
-  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  S.tasks=S.tasks.map(x=>String(x.id)===String(id)?updated:x);
   fbWrite(`tasks/${id}`,updated);
   render(); // Full render needed — task moves between sections
 }
-function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>t.id!==id);document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
+function delTask(id){if(!confirm("Delete this task?"))return;S.tasks=S.tasks.filter(t=>String(t.id)!==String(id));document.getElementById(`tc-${id}`)?.remove();fbDel(`tasks/${id}`);updateStats();}
 
 // ── MULTI-REMARK WITH TIMESTAMP ──
 function svRmk(id){
   const txt=document.getElementById(`rmk-${id}`)?.value?.trim();if(!txt)return alert("Enter a remark");
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   // Each remark has unique id, date, time, text — multiple per day allowed
   const newRmk={id:genId(),date:tod(),time:tsNow(),dt:dtNow(),text:txt};
   const remarks=[...(t.remarks||[]),newRmk];
   const updated={...t,remarks};
-  S.tasks=S.tasks.map(x=>x.id===id?updated:x);
+  S.tasks=S.tasks.map(x=>String(x.id)===String(id)?updated:x);
   S.remarkingId=null;S.showRemarksId=id;
   updateCard(id);fbWrite(`tasks/${id}`,updated);
 }
@@ -350,13 +350,13 @@ function addWa(){
   const newW={id,contact,msg,time:time||"Soon",sent:false,priority};
   S.wa=[...S.wa,newW];S.showAddWa=false;render();fbWrite(`wa/${id}`,newW);
 }
-function mkSent(id){const w=S.wa.find(x=>x.id===id);if(!w)return;const u={...w,sent:true};S.wa=S.wa.map(x=>x.id===id?u:x);render();fbWrite(`wa/${id}`,u);}
+function mkSent(id){const w=S.wa.find(x=>String(x.id)===String(id));if(!w)return;const u={...w,sent:true};S.wa=S.wa.map(x=>String(x.id)===String(id)?u:x);render();fbWrite(`wa/${id}`,u);}
 function dlWa(id){S.wa=S.wa.filter(w=>w.id!==id);render();fbDel(`wa/${id}`);}
 
 // ── TARGETED CARD UPDATE ──
 function updateCard(id){
   const el=document.getElementById(`tc-${id}`);if(!el)return;
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  const t=S.tasks.find(x=>String(x.id)===String(id));if(!t)return;
   el.outerHTML=tCard(t);updateStats();
 }
 function updateStats(){
@@ -399,42 +399,42 @@ function tCard(t){
   const remarks=t.remarks||[];const hr=remarks.length>0;
   const priRow=["critical","high","medium","low"].map(p=>{
     const cls={critical:"pb-c",high:"pb-h",medium:"pb-m",low:"pb-l"}[p];
-    return`<button class="pb ${cls} ${t.priority===p?'on':''}" onclick="setPri(${t.id},'${p}')">${PRI[p].label}</button>`;
+    return`<button class="pb ${cls} ${t.priority===p?'on':''}" onclick="setPri('${t.id}','${p}')">${PRI[p].label}</button>`;
   }).join("");
   const schedRow=`
-    <button class="st ${t.sched==='today'?'st-t':''}" onclick="setSched(${t.id},'today')">📅 Today</button>
-    <button class="st ${t.sched==='tomorrow'?'st-r':''}" onclick="setSched(${t.id},'tomorrow')">⏭ Tomorrow</button>
-    <button class="st ${t.sched==='custom'?'st-c':''}" onclick="setSched(${t.id},'custom')">🗓 Custom</button>
-    ${t.sched!=='none'?`<button class="st st-x" onclick="setSched(${t.id},'none')">✕ Clear</button>`:''}
-    ${t.sched==='custom'?`<input type="date" value="${ec(t.customDate||'')}" onchange="setCDate(${t.id},this.value)" style="padding:4px 8px;border-radius:8px;border:1.5px solid #c4b5fd;font-size:11px;color:#2d2013;font-family:inherit;outline:none;background:#faf5ff;width:130px">`:''}`;
+    <button class="st ${t.sched==='today'?'st-t':''}" onclick="setSched('${t.id}','today')">📅 Today</button>
+    <button class="st ${t.sched==='tomorrow'?'st-r':''}" onclick="setSched('${t.id}','tomorrow')">⏭ Tomorrow</button>
+    <button class="st ${t.sched==='custom'?'st-c':''}" onclick="setSched('${t.id}','custom')">🗓 Custom</button>
+    ${t.sched!=='none'?`<button class="st st-x" onclick="setSched('${t.id}','none')">✕ Clear</button>`:''}
+    ${t.sched==='custom'?`<input type="date" value="${ec(t.customDate||'')}" onchange="setCDate('${t.id}',this.value)" style="padding:4px 8px;border-radius:8px;border:1.5px solid #c4b5fd;font-size:11px;color:#2d2013;font-family:inherit;outline:none;background:#faf5ff;width:130px">`:''}`;
   // Remarks display — sorted newest first
   const rmksHtml=sr&&hr?`<div class="rmk-section">
     <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">📅 Progress Log (${remarks.length} entries)</div>
     ${[...remarks].reverse().map(r=>`<div class="ri">
       <div class="rd">📌 ${ec(r.date||'')} <span class="rts">⏰ ${ec(r.time||r.dt||'')}</span></div>
       <div class="rt">${ec(r.text)}</div>
-      <div style="text-align:right;margin-top:5px"><button class="btn-del" onclick="delRmk(${t.id},${r.id||0})">🗑</button></div>
+      <div style="text-align:right;margin-top:5px"><button class="btn-del" onclick="delRmk('${t.id}',${r.id||0})">🗑</button></div>
     </div>`).join("")}
   </div>`:"";
   const addRmk=ir?`<div class="add-rmk">
     <div style="font-size:12px;font-weight:700;color:#166534;margin-bottom:6px">📝 Add Progress Note — ${tod()} ${tsNow()}</div>
     <textarea class="inp" id="rmk-${t.id}" placeholder="What happened? Any update or progress..." rows="2" style="resize:vertical;margin-bottom:8px"></textarea>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.remarkingId=null;updateCard(${t.id})">Cancel</button>
-      <button style="padding:5px 14px;background:#16a34a;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="svRmk(${t.id})">💾 Save Note</button>
+      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.remarkingId=null;updateCard('${t.id}')">Cancel</button>
+      <button style="padding:5px 14px;background:#16a34a;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="svRmk('${t.id}')">💾 Save Note</button>
     </div>
   </div>`:"";
   const editForm=ie?`<div style="background:#eff6ff;border-top:1px solid #93c5fd;padding:10px 13px">
     <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px">✏️ Edit Task</div>
     <input class="inp" id="ed-title-${t.id}" value="${ec(t.title)}" placeholder="Task title..." style="margin-bottom:8px;border-color:#93c5fd">
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.editingId=null;updateCard(${t.id})">Cancel</button>
-      <button style="padding:5px 14px;background:#1d4ed8;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="saveEdit(${t.id})">💾 Save</button>
+      <button class="btn-outline" style="padding:5px 12px;font-size:12px" onclick="S.editingId=null;updateCard('${t.id}')">Cancel</button>
+      <button style="padding:5px 14px;background:#1d4ed8;border:none;color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer" onclick="saveEdit('${t.id}')">💾 Save</button>
     </div>
   </div>`:"";
   return`<div class="tc" id="tc-${t.id}" style="opacity:${t.done?0.6:1}">
     <div class="tc-top">
-      <div class="chk ${t.done?'done':''}" onclick="toggleTask(${t.id})" style="border-color:${t.done?'#16a34a':PRI[t.priority]?.color||'#d0c0a0'}">${t.done?"✓":""}</div>
+      <div class="chk ${t.done?'done':''}" onclick="toggleTask('${t.id}')" style="border-color:${t.done?'#16a34a':PRI[t.priority]?.color||'#d0c0a0'}">${t.done?"✓":""}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600;margin-bottom:7px;text-decoration:${t.done?'line-through':'none'};color:${t.done?'#b89060':'#2d2013'};line-height:1.4">${ec(t.title)}</div>
         <div class="pri-btns">${priRow}</div>
@@ -443,10 +443,10 @@ function tCard(t){
     </div>
     <div class="stabs">${schedRow}</div>
     <div class="tbar">
-      <button class="tb" style="background:#eff6ff;border-color:#93c5fd;color:#1d4ed8" onclick="S.editingId=S.editingId===${t.id}?null:${t.id};S.remarkingId=null;S.showRemarksId=null;updateCard(${t.id})">✏️ ${ie?"Close":"Edit"}</button>
-      <button class="tb tb-r" onclick="S.remarkingId=S.remarkingId===${t.id}?null:${t.id};S.showRemarksId=null;S.editingId=null;updateCard(${t.id})">📝 ${ir?"Close":"Add Note"}</button>
-      ${hr?`<button class="tb tb-v" onclick="S.showRemarksId=S.showRemarksId===${t.id}?null:${t.id};S.remarkingId=null;S.editingId=null;updateCard(${t.id})">📅 ${sr?"Hide":"View"} Log (${remarks.length})</button>`:""}
-      <button class="btn-del" onclick="delTask(${t.id})" style="margin-left:auto">🗑</button>
+      <button class="tb" style="background:#eff6ff;border-color:#93c5fd;color:#1d4ed8" onclick="S.editingId=S.editingId==='${t.id}'?null:'${t.id}';S.remarkingId=null;S.showRemarksId=null;updateCard('${t.id}')">✏️ ${ie?"Close":"Edit"}</button>
+      <button class="tb tb-r" onclick="S.remarkingId=S.remarkingId==='${t.id}'?null:'${t.id}';S.showRemarksId=null;S.editingId=null;updateCard('${t.id}')">📝 ${ir?"Close":"Add Note"}</button>
+      ${hr?`<button class="tb tb-v" onclick="S.showRemarksId=S.showRemarksId==='${t.id}'?null:'${t.id}';S.remarkingId=null;S.editingId=null;updateCard('${t.id}')">📅 ${sr?"Hide":"View"} Log (${remarks.length})</button>`:""}
+      <button class="btn-del" onclick="delTask('${t.id}')" style="margin-left:auto">🗑</button>
     </div>
     ${editForm}${rmksHtml}${addRmk}
   </div>`;
@@ -491,7 +491,7 @@ function rDash(c,pnd,cr){
       ${azTasks(unsch).slice(0,4).map(t=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5e8d0">
         <div style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ec(t.title)}</div>
         ${pt(t.priority)}
-        <button onclick="setSched(${t.id},'today')" style="padding:3px 10px;background:#f57c00;border:none;color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Today</button>
+        <button onclick="setSched('${t.id}','today')" style="padding:3px 10px;background:#f57c00;border:none;color:#fff;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Today</button>
       </div>`).join("")}
       ${unsch.length>4?`<div style="text-align:center;margin-top:8px"><button class="btn-outline" style="font-size:12px;padding:5px 14px" onclick="navTo('manual',2)">View all ${unsch.length} →</button></div>`:""}
     </div>`:""}`;
