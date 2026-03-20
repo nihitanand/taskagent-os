@@ -523,15 +523,7 @@ function rSheet(c){
   if(unsch.length){
     any=true;
     html+=collHdr("⏳ Unscheduled",unsch.length,"unscheduled",S.collSheet,"#6b7280","#9ca3af");
-    if(S.collSheet.unscheduled)html+=`<div style="margin-bottom:12px">${unsch.map(t=>`
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:10px">
-        <div class="chk" onclick="toggleTask(${t.id})" style="border-color:${PRI[t.priority]?.color||'#d0c0a0'};flex-shrink:0">${t.done?"✓":""}</div>
-        <div style="flex:1;font-size:14px;font-weight:600;color:#2d2013;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ec(t.title)}</div>
-        ${pt(t.priority)}
-        <button onclick="setSched(${t.id},'today')" style="padding:5px 12px;background:#f57c00;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">Today</button>
-        <button onclick="setSched(${t.id},'tomorrow')" style="padding:5px 12px;background:#1565c0;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">Tomorrow</button>
-        <button onclick="setSched(${t.id},'custom')" style="padding:5px 12px;background:#7c3aed;border:none;color:#fff;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">Custom</button>
-      </div>`).join("")}</div>`;
+    if(S.collSheet.unscheduled)html+=`<div style="margin-bottom:12px">${unsch.map(t=>tCard(t)).join("")}</div>`;
   }
 
   if(!any)html+=`<div class="card" style="text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-weight:600;color:#78350f;margin-bottom:7px">No tasks yet</div><button class="btn-sun" onclick="navTo('manual',2)">✏️ Go to My Tasks</button></div>`;
